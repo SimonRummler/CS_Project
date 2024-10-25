@@ -1,51 +1,26 @@
-# Copyright 2018-2022 Streamlit Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+import gspread
+from google.oauth2.service_account import Credentials
 
-import streamlit as st
-from streamlit.logger import get_logger
+# Pfad zur Dienstkonto-JSON-Datei (hier den tatsächlichen Pfad zu deiner heruntergeladenen Datei angeben)
+SERVICE_ACCOUNT_FILE = '/mnt/data/round-seeker-439709-p8-b1cf9a6ceb00.json'
 
-LOGGER = get_logger(__name__)
+# Google Sheets API-Scopes (Berechtigungen) festlegen
+SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
+# Anmeldedaten aus der JSON-Datei laden
+creds = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
 
-def run():
-    st.set_page_config(
-        page_title="Hello",
-        page_icon="👋",
-    )
+# Google Sheets Client erstellen
+client = gspread.authorize(creds)
 
-    st.write("# Welcome to Streamlit! 👋")
+# Google Sheet öffnen (hier den Namen des Sheets angeben: "HR-Data")
+spreadsheet = client.open('HR-Data')
 
-    st.sidebar.success("Select a demo above.")
+# Wähle das erste Blatt (Sheet1) aus
+sheet = spreadsheet.sheet1
 
-    st.markdown(
-        """
-        Streamlit is an open-source app framework built specifically for
-        Machine Learning and Data Science projects.
-        **👈 Select a demo from the sidebar** to see some examples
-        of what Streamlit can do!
-        ### Want to learn more?
-        - Check out [streamlit.io](https://streamlit.io)
-        - Jump into our [documentation](https://docs.streamlit.io)
-        - Ask a question in our [community
-          forums](https://discuss.streamlit.io)
-        ### See more complex demos
-        - Use a neural net to [analyze the Udacity Self-driving Car Image
-          Dataset](https://github.com/streamlit/demo-self-driving)
-        - Explore a [New York City rideshare dataset](https://github.com/streamlit/demo-uber-nyc-pickups)
-    """
-    )
+# Alle Daten als Liste von Dictionaries abrufen
+data = sheet.get_all_records()
 
-
-if __name__ == "__main__":
-    run()
+# Die abgerufenen Daten anzeigen
+print(data)
