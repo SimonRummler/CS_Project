@@ -6,7 +6,7 @@ matplotlib.use("agg")
 from PIL import Image
 
 # Load the uploaded CSV file
-df = pd.read_csv(r"/Users/simonrummler/Desktop/Dataset/HR_Dataset_Group4.5.csv", delimiter=';')
+df = pd.read_csv(r"CS_Project/HR_Dataset_Group4.5.csv", delimiter=';')
 
 # Connect to SQLite and create new database
 conn = sqlite3.connect("hr_full_database_group4_5.db")
