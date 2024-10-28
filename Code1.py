@@ -7,7 +7,7 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 # 1. Lade die JSON-Datei mit den Anmeldedaten
-SERVICE_ACCOUNT_FILE = r"/Users/simonrummler/Downloads/round-seeker-439709-p8-60582c389ba4.json"
+SERVICE_ACCOUNT_FILE = r"round-seeker-439709-p8-60582c389ba4.json"
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
 # Erstelle die Anmeldedaten über die JSON-Datei
