@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score
+import seaborn as sns
 
 # Titel der Streamlit-App
 st.title("3D Regression Model: Predict Monthly Income based on Job Level and Working Years")
@@ -43,14 +44,12 @@ X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, 
 model = LinearRegression()
 model.fit(X_train, y_train)
 
-# Vorhersagen für Testdaten
-y_pred = model.predict(X_test)
+# Vorhersagen für alle Datenpunkte
+y_pred_full = model.predict(X_scaled)
 
 # Modellbewertung
-mse = mean_squared_error(y_test, y_pred)
-r2 = r2_score(y_test, y_pred)
-
-# Ergebnisse anzeigen
+mse = mean_squared_error(y_test, model.predict(X_test))
+r2 = r2_score(y_test, model.predict(X_test))
 st.subheader("Model Evaluation")
 st.write(f"Mean Squared Error (MSE): {mse:.2f}")
 st.write(f"R² Score: {r2:.2f}")
@@ -66,20 +65,45 @@ if st.button("Predict"):
     predicted_income = model.predict(input_scaled)[0]
     st.write(f"Predicted Monthly Income: ${predicted_income:.2f}")
 
-# 3D-Visualisierung
-st.subheader("3D Visualization of the Regression Model")
-fig = plt.figure(figsize=(10, 8))
+# **3D-Visualisierung mit Farbkodierung**
+st.subheader("3D Visualization with Adjusted Perspective and Job Level Coloring")
+fig = plt.figure(figsize=(12, 8))
 ax = fig.add_subplot(111, projection='3d')
 
-# Originaldaten plotten
-ax.scatter(
-    df_filtered["TotalWorkingYears"],
-    df_filtered["JobLevel"],
-    df_filtered["MonthlyIncome"],
-    c="blue",
-    alpha=0.5,
-    label="Data Points",
-)
+# Datenpunkte mit Farbcodierung nach JobLevel
+job_levels = df_filtered["JobLevel"].unique()
+colors = sns.color_palette("viridis", len(job_levels))
+
+for i, job_level in enumerate(sorted(job_levels)):
+    # Filter für das jeweilige Job Level
+    level_data = df_filtered[df_filtered["JobLevel"] == job_level]
+    level_predictions = y_pred_full[df_filtered["JobLevel"] == job_level]
+
+    # Punkte über der Regressionslinie markieren
+    above_line = level_data["MonthlyIncome"] > level_predictions
+    below_line = ~above_line
+
+    # Punkte über der Linie
+    ax.scatter(
+        level_data["TotalWorkingYears"][above_line],
+        level_data["JobLevel"][above_line],
+        level_data["MonthlyIncome"][above_line],
+        color=colors[i],
+        alpha=0.8,
+        label=f"Job Level {job_level} (Above Line)",
+        marker="^",
+    )
+
+    # Punkte unter der Linie
+    ax.scatter(
+        level_data["TotalWorkingYears"][below_line],
+        level_data["JobLevel"][below_line],
+        level_data["MonthlyIncome"][below_line],
+        color=colors[i],
+        alpha=0.5,
+        label=f"Job Level {job_level} (Below Line)",
+        marker="o",
+    )
 
 # Regressionsfläche erstellen
 x_surf, y_surf = np.meshgrid(
@@ -89,16 +113,17 @@ x_surf, y_surf = np.meshgrid(
 z_surf = model.predict(scaler.transform(np.c_[x_surf.ravel(), y_surf.ravel()])).reshape(x_surf.shape)
 
 # Regressionsfläche plotten
-ax.plot_surface(x_surf, y_surf, z_surf, color="red", alpha=0.3, label="Regression Surface")
+ax.plot_surface(x_surf, y_surf, z_surf, cmap="viridis", alpha=0.3)
 
-# Achsenbeschriftungen
+# Achsentitel und Beschriftungen
 ax.set_xlabel("Total Working Years")
 ax.set_ylabel("Job Level")
 ax.set_zlabel("Monthly Income")
-ax.set_title("3D Regression: Total Working Years & Job Level vs. Monthly Income")
+ax.set_title("3D Regression with Job Levels and Deviations")
+
+# Perspektive anpassen
+ax.view_init(elev=30, azim=120)  # Elevation (Höhe) und Azimut (Seitenansicht)
 
 # Legende hinzufügen
-ax.legend()
+ax.legend(loc="best")
 st.pyplot(fig)
-
-
