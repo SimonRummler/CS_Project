@@ -25,8 +25,8 @@ if "TotalWorkingYears" in df.columns and "MonthlyIncome" in df.columns and "JobL
     df_filtered = df[["TotalWorkingYears", "MonthlyIncome", "JobLevel"]].dropna()
 
     # Features und Zielvariable definieren
-    X = df_filtered[["TotalWorkingYears"]]
-    y = df_filtered["MonthlyIncome"]
+    X = df_filtered[["TotalWorkingYears"]].values  # Konvertiere in numpy.ndarray
+    y = df_filtered["MonthlyIncome"].values
 
     # Standardisierung der Eingabedaten
     scaler = StandardScaler()
@@ -64,18 +64,18 @@ if "TotalWorkingYears" in df.columns and "MonthlyIncome" in df.columns and "JobL
     st.subheader("Visualization: Regression with Confidence Intervals")
     fig, ax = plt.subplots(figsize=(10, 6))
     scatter = ax.scatter(
-        X["TotalWorkingYears"], y, c=df_filtered["JobLevel"], cmap="viridis", s=10, alpha=0.5, label="Data Points"
+        X.flatten(), y, c=df_filtered["JobLevel"], cmap="viridis", s=10, alpha=0.5, label="Data Points"
     )
     colorbar = fig.colorbar(scatter, ax=ax)
     colorbar.set_label("Job Level")
 
     # Konfidenzintervall hinzufügen
     ax.fill_between(
-        X["TotalWorkingYears"].flatten(), lower, upper, color="gray", alpha=0.3, label="Confidence Interval"
+        X.flatten(), lower, upper, color="gray", alpha=0.3, label="Confidence Interval"
     )
 
     # Regressionslinie
-    ax.plot(X["TotalWorkingYears"], model.predict(X_scaled), color="red", linewidth=2, label="Regression Line")
+    ax.plot(X.flatten(), model.predict(X_scaled), color="red", linewidth=2, label="Regression Line")
 
     # Achsentitel und Beschriftungen
     ax.set_xlabel("Total Working Years (Years)", fontsize=12)
@@ -88,7 +88,7 @@ if "TotalWorkingYears" in df.columns and "MonthlyIncome" in df.columns and "JobL
     st.subheader("Residual Plot: Evaluating Model Fit")
     residuals = y - model.predict(X_scaled)
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.scatter(X["TotalWorkingYears"], residuals, color="blue", alpha=0.5)
+    ax.scatter(X.flatten(), residuals, color="blue", alpha=0.5)
     ax.axhline(0, color="red", linestyle="--", linewidth=2)
     ax.set_xlabel("Total Working Years (Years)", fontsize=12)
     ax.set_ylabel("Residuals", fontsize=12)
@@ -97,5 +97,4 @@ if "TotalWorkingYears" in df.columns and "MonthlyIncome" in df.columns and "JobL
 
 else:
     st.error("The required columns 'TotalWorkingYears', 'MonthlyIncome', and 'JobLevel' are not found in the dataset.")
-
 
