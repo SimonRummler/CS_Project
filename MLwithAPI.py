@@ -29,10 +29,6 @@ if not all(col in df.columns for col in required_columns):
 # Relevante Spalten filtern und NaN-Werte entfernen
 df_filtered = df[required_columns].dropna()
 
-# Debug: Vorschau der Daten
-st.write("DataFrame Preview:")
-st.write(df_filtered.head())
-
 # Features und Zielvariable definieren
 X = df_filtered[["TotalWorkingYears", "JobLevel"]].values
 y = df_filtered["MonthlyIncome"].values
@@ -72,6 +68,17 @@ st.write(f"R²: {r2:.2f}")
 st.write(f"Adjusted R²: {adjusted_r2:.2f}")
 st.write(f"Mean Squared Error (MSE): {mse:.2f}")
 st.write(f"Root Mean Squared Error (RMSE): {rmse:.2f}")
+
+# Interaktive Eingabe: Total Working Years und Job Level
+st.subheader("Predict Monthly Income")
+working_years = st.number_input("Enter Total Working Years", min_value=0, max_value=50, step=1)
+job_level = st.number_input("Enter Job Level", min_value=1, max_value=5, step=1)
+
+if st.button("Predict Income"):
+    input_data = np.array([[working_years, job_level]])
+    input_scaled = scaler.transform(input_data)
+    predicted_income = model.predict(input_scaled)[0]
+    st.write(f"Predicted Monthly Income: ${predicted_income:.2f}")
 
 # **3D-Visualisierung mit 30-Grad-Drehung**
 st.subheader("3D Visualization with 30-Degree Rotation to the Left")
@@ -134,8 +141,9 @@ ax.set_zlabel("Monthly Income")
 ax.set_title("3D Regression with 30-Degree Rotation to the Left")
 
 # **Anpassung der Perspektive**
-ax.view_init(elev=10, azim=-30)  # Perspektive: Elevation bleibt 10, Azimut um 30 Grad nach links
+ax.view_init(elev=10, azim=-38)  # Perspektive: Elevation bleibt 10, Azimut um 30 Grad nach links
 
 # Legende hinzufügen
 ax.legend(loc="best")
 st.pyplot(fig)
+
