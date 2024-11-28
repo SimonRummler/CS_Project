@@ -9,7 +9,7 @@ from sklearn.utils import resample
 from sklearn.metrics import mean_squared_error, r2_score
 
 # Titel der Streamlit-App
-st.title("Linear Regression: Total Working Years vs. Monthly Income")
+st.title("Linear Regression: Total Working Years vs. Monthly Income (JobLevel for Visualization)")
 
 # Daten aus der CSV-Datei laden
 csv_file = "HR_Dataset_Group4.5.csv"  # Dateiname im Repository
@@ -20,9 +20,9 @@ except FileNotFoundError:
     st.stop()
 
 # Prüfen, ob die erforderlichen Spalten existieren
-if "TotalWorkingYears" in df.columns and "MonthlyIncome" in df.columns:
+if "TotalWorkingYears" in df.columns and "MonthlyIncome" in df.columns and "JobLevel" in df.columns:
     # Relevante Spalten filtern und NaN-Werte entfernen
-    df_filtered = df[["TotalWorkingYears", "MonthlyIncome"]].dropna()
+    df_filtered = df[["TotalWorkingYears", "MonthlyIncome", "JobLevel"]].dropna()
 
     # Features und Zielvariable definieren
     X = df_filtered[["TotalWorkingYears"]].values  # Nur TotalWorkingYears als Input
@@ -75,12 +75,14 @@ if "TotalWorkingYears" in df.columns and "MonthlyIncome" in df.columns:
     lower = np.percentile(preds, 2.5, axis=0)
     upper = np.percentile(preds, 97.5, axis=0)
 
-    # Hauptplot mit Konfidenzintervallen und Datenpunkten
+    # Hauptplot mit Konfidenzintervallen und Farbkodierung nach JobLevel
     st.subheader("Visualization: Regression with Confidence Intervals")
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.scatter(
-        X.flatten(), y, color="blue", s=10, alpha=0.5, label="Data Points"
+    scatter = ax.scatter(
+        X.flatten(), y, c=df_filtered["JobLevel"], cmap="viridis", s=10, alpha=0.5, label="Data Points"
     )
+    colorbar = fig.colorbar(scatter, ax=ax)
+    colorbar.set_label("Job Level")
 
     # Konfidenzintervall hinzufügen
     ax.fill_between(
@@ -102,6 +104,5 @@ if "TotalWorkingYears" in df.columns and "MonthlyIncome" in df.columns:
     st.pyplot(fig)
 
 else:
-    st.error("The required columns 'TotalWorkingYears' and 'MonthlyIncome' are not found in the dataset.")
-
+    st.error("The required columns 'TotalWorkingYears', 'MonthlyIncome', and 'JobLevel' are not found in the dataset.")
 
