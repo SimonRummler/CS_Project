@@ -72,7 +72,7 @@ ax.set_zlabel("Monthly Income")
 ax.set_title("3D Regression with Metrics")
 
 # **Anpassung der Perspektive**
-ax.view_init(elev=10, azim=-15)  # Perspektive anpassen
+ax.view_init(elev=15, azim=-30)  # Perspektive anpassen
 
 # Metriken als Text anzeigen
 ax.text2D(0.05, 0.95, f"R²: {r2:.2f}", transform=ax.transAxes, fontsize=10, color="black")
