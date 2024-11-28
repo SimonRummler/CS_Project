@@ -2,13 +2,11 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.metrics import mean_squared_error, r2_score, accuracy_score, confusion_matrix, classification_report
-from sklearn.preprocessing import StandardScaler
-import numpy as np
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
 
 # Titel der Streamlit-App
-st.title("HR Analytics: Exploring Relationships Between Variables")
+st.title("Linear Regression: Total Working Years, Job Level vs. Monthly Income")
 
 # Daten aus der CSV-Datei laden
 csv_file = "HR_Dataset_Group4.5.csv"  # Dateiname im Repository
@@ -18,12 +16,12 @@ except FileNotFoundError:
     st.error("CSV file not found. Please check the file path.")
     st.stop()
 
-# Abschnitt 1: Lineare Regression: Total Working Years vs. Monthly Income
-st.header("Linear Regression: Total Working Years vs. Monthly Income")
-if "TotalWorkingYears" in df.columns and "MonthlyIncome" in df.columns:
-    df_filtered = df[["TotalWorkingYears", "MonthlyIncome"]].dropna()
+# Prüfen, ob die erforderlichen Spalten existieren
+if "TotalWorkingYears" in df.columns and "JobLevel" in df.columns and "MonthlyIncome" in df.columns:
+    # Relevante Spalten filtern und NaN-Werte entfernen
+    df_filtered = df[["TotalWorkingYears", "JobLevel", "MonthlyIncome"]].dropna()
 
-    # Entferne Ausreißer mit IQR
+    # Entferne Ausreißer mit IQR für MonthlyIncome
     Q1 = df_filtered["MonthlyIncome"].quantile(0.25)
     Q3 = df_filtered["MonthlyIncome"].quantile(0.75)
     IQR = Q3 - Q1
@@ -32,34 +30,50 @@ if "TotalWorkingYears" in df.columns and "MonthlyIncome" in df.columns:
         (df_filtered["MonthlyIncome"] <= Q3 + 1.5 * IQR)
     ]
 
-    X = df_filtered[["TotalWorkingYears"]]
+    # Features (X) und Zielvariable (y) definieren
+    X = df_filtered[["TotalWorkingYears", "JobLevel"]]
     y = df_filtered["MonthlyIncome"]
 
+    # Daten aufteilen
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+    # Modell trainieren
     model = LinearRegression()
     model.fit(X_train, y_train)
 
+    # Vorhersagen für Testdaten
     y_pred = model.predict(X_test)
 
+    # Modellbewertung
     mse = mean_squared_error(y_test, y_pred)
     r2 = r2_score(y_test, y_pred)
 
+    # Ergebnisse anzeigen
     st.subheader("Model Evaluation")
     st.write(f"Mean Squared Error (MSE): {mse:.2f}")
     st.write(f"R² Score: {r2:.2f}")
 
+    # Visualisierung der Daten
+    st.subheader("Visualization")
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.scatter(X, y, color='blue', s=10, alpha=0.7, label='Data Points')
-    ax.plot(X, model.predict(X), color='red', linewidth=2, label='Linear Regression')
-    ax.set_xlabel("Total Working Years (Years)", fontsize=12)
-    ax.set_ylabel("Monthly Income (in USD)", fontsize=12)
-    ax.set_title("Linear Regression: Total Working Years vs. Monthly Income", fontsize=14)
+    scatter = ax.scatter(df_filtered["TotalWorkingYears"], df_filtered["MonthlyIncome"], 
+                         c=df_filtered["JobLevel"], cmap="viridis", s=20, alpha=0.7, label="Data Points")
+    ax.set_xlabel("Total Working Years")
+    ax.set_ylabel("Monthly Income (in USD)")
+    ax.set_title("Total Working Years, Job Level vs. Monthly Income")
+    colorbar = fig.colorbar(scatter, ax=ax, label="Job Level")
+    
+    # Regressionsergebnisse anzeigen
+    X_test_sorted = X_test.sort_values(by="TotalWorkingYears")
+    y_pred_sorted = model.predict(X_test_sorted)
+    ax.plot(X_test_sorted["TotalWorkingYears"], y_pred_sorted, color="red", linewidth=2, label="Regression Line")
     ax.legend()
-    ax.grid(True, linestyle='--', alpha=0.7)
+
+    # Plot in Streamlit anzeigen
     st.pyplot(fig)
 else:
-    st.error("The required columns 'TotalWorkingYears' and 'MonthlyIncome' are not found in the dataset.")
+    st.error("The required columns 'TotalWorkingYears', 'JobLevel', and 'MonthlyIncome' are not found in the dataset.")
+
 
 # Abschnitt 2: Logistische Regression: Distance from Home vs. Attrition
 st.header("Logistic Regression: Distance from Home vs. Attrition")
