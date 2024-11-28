@@ -1,15 +1,15 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.utils import resample
+from sklearn.metrics import mean_squared_error, r2_score
 
 # Titel der Streamlit-App
-st.title("Logistic Regression: Distance from Home vs. Attrition")
+st.title("Enhanced Linear Regression: Total Working Years vs. Monthly Income")
 
 # Daten aus der CSV-Datei laden
 csv_file = "HR_Dataset_Group4.5.csv"  # Dateiname im Repository
@@ -20,16 +20,15 @@ except FileNotFoundError:
     st.stop()
 
 # Prüfen, ob die erforderlichen Spalten existieren
-if "DistanceFromHome" in df.columns and "Attrition" in df.columns:
+if "TotalWorkingYears" in df.columns and "MonthlyIncome" in df.columns and "JobLevel" in df.columns:
     # Relevante Spalten filtern und NaN-Werte entfernen
-    df_filtered = df[["DistanceFromHome", "Attrition"]].dropna()
-    df_filtered["Attrition"] = df_filtered["Attrition"].map({"Yes": 1, "No": 0})
+    df_filtered = df[["TotalWorkingYears", "MonthlyIncome", "JobLevel"]].dropna()
 
-    # Features (X) und Zielvariable (y) definieren
-    X = df_filtered[["DistanceFromHome"]]
-    y = df_filtered["Attrition"]
+    # Features und Zielvariable definieren
+    X = df_filtered[["TotalWorkingYears"]]
+    y = df_filtered["MonthlyIncome"]
 
-    # Standardisierung der Distanzdaten
+    # Standardisierung der Eingabedaten
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
 
@@ -37,82 +36,66 @@ if "DistanceFromHome" in df.columns and "Attrition" in df.columns:
     X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
 
     # Modell trainieren
-    model = LogisticRegression()
+    model = LinearRegression()
     model.fit(X_train, y_train)
 
     # Vorhersagen für Testdaten
     y_pred = model.predict(X_test)
 
-    # Evaluation
-    accuracy = accuracy_score(y_test, y_pred)
-    cm = confusion_matrix(y_test, y_pred)
-    report = classification_report(y_test, y_pred, output_dict=True)
+    # Modellbewertung
+    mse = mean_squared_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred)
 
     # Ergebnisse anzeigen
     st.subheader("Model Evaluation")
-    st.write(f"Accuracy: {accuracy:.2f}")
-    st.write("Confusion Matrix:")
-    st.write(cm)
-    st.write("Classification Report:")
-    st.write(pd.DataFrame(report).transpose())
+    st.write(f"Mean Squared Error (MSE): {mse:.2f}")
+    st.write(f"R² Score: {r2:.2f}")
 
-    # Wahrscheinlichkeiten berechnen
-    X_range = np.linspace(X.min(), X.max(), 100).reshape(-1, 1)
-    X_range_scaled = scaler.transform(X_range)
-    y_prob = model.predict_proba(X_range_scaled)[:, 1]
+    # Konfidenzintervalle berechnen
+    preds = []
+    for _ in range(100):  # Bootstrap-Resampling
+        X_sample, y_sample = resample(X_train, y_train)
+        model.fit(X_sample, y_sample)
+        preds.append(model.predict(X_scaled))
+    lower = np.percentile(preds, 2.5, axis=0)
+    upper = np.percentile(preds, 97.5, axis=0)
 
-    # Benutzer wählt Visualisierung aus
-    st.sidebar.header("Select Visualization")
-    viz_option = st.sidebar.selectbox(
-        "Choose the visualization type:",
-        options=["Scatterplot with Regression Curve", "Density Plot (KDE)", "Grouped Bar Chart"]
+    # Hauptplot mit Konfidenzintervallen und Farbkodierung
+    st.subheader("Visualization: Regression with Confidence Intervals")
+    fig, ax = plt.subplots(figsize=(10, 6))
+    scatter = ax.scatter(
+        X["TotalWorkingYears"], y, c=df_filtered["JobLevel"], cmap="viridis", s=10, alpha=0.5, label="Data Points"
+    )
+    colorbar = fig.colorbar(scatter, ax=ax)
+    colorbar.set_label("Job Level")
+
+    # Konfidenzintervall hinzufügen
+    ax.fill_between(
+        X["TotalWorkingYears"].flatten(), lower, upper, color="gray", alpha=0.3, label="Confidence Interval"
     )
 
-    # Visualisierung 1: Scatterplot mit Regressionskurve
-    if viz_option == "Scatterplot with Regression Curve":
-        st.subheader("Scatterplot with Logistic Regression Curve")
-        fig, ax = plt.subplots(figsize=(10, 6))
-        class_0 = df_filtered[df_filtered["Attrition"] == 0]
-        class_1 = df_filtered[df_filtered["Attrition"] == 1]
-        ax.scatter(class_0["DistanceFromHome"], class_0["Attrition"], color="blue", alpha=0.6, label="Attrition = No")
-        ax.scatter(class_1["DistanceFromHome"], class_1["Attrition"], color="orange", alpha=0.6, label="Attrition = Yes")
-        ax.plot(X_range, y_prob, color="red", linewidth=2, label="Logistic Regression Curve")
-        ax.axhline(0.5, color="green", linestyle="--", label="50% Probability Threshold")
-        ax.set_xlabel("Distance from Home (km)", fontsize=12)
-        ax.set_ylabel("Probability of Attrition", fontsize=12)
-        ax.set_title("Distance from Home vs. Attrition", fontsize=14)
-        ax.legend(fontsize=10)
-        ax.grid(True, linestyle="--", alpha=0.7)
-        st.pyplot(fig)
+    # Regressionslinie
+    ax.plot(X["TotalWorkingYears"], model.predict(X_scaled), color="red", linewidth=2, label="Regression Line")
 
-    # Visualisierung 2: Density Plot (KDE)
-    elif viz_option == "Density Plot (KDE)":
-        st.subheader("Density Plot (KDE) with Logistic Regression Curve")
-        fig, ax = plt.subplots(figsize=(10, 6))
-        sns.kdeplot(df_filtered[df_filtered["Attrition"] == 0]["DistanceFromHome"], 
-                    label="Attrition = No", fill=True, alpha=0.6, color="blue", ax=ax)
-        sns.kdeplot(df_filtered[df_filtered["Attrition"] == 1]["DistanceFromHome"], 
-                    label="Attrition = Yes", fill=True, alpha=0.6, color="orange", ax=ax)
-        ax.plot(X_range, y_prob, color="red", linewidth=2, label="Logistic Regression Curve")
-        ax.set_xlabel("Distance from Home (km)", fontsize=12)
-        ax.set_ylabel("Density / Probability", fontsize=12)
-        ax.set_title("KDE Plot with Logistic Regression", fontsize=14)
-        ax.legend(fontsize=10)
-        st.pyplot(fig)
+    # Achsentitel und Beschriftungen
+    ax.set_xlabel("Total Working Years (Years)", fontsize=12)
+    ax.set_ylabel("Monthly Income (in USD)", fontsize=12)
+    ax.set_title("Enhanced Linear Regression: Total Working Years vs. Monthly Income", fontsize=14)
+    ax.legend()
+    st.pyplot(fig)
 
-    # Visualisierung 3: Gruppierte Balkendiagramme
-    elif viz_option == "Grouped Bar Chart":
-        st.subheader("Grouped Bar Chart")
-        df_filtered["DistanceGroup"] = pd.cut(df_filtered["DistanceFromHome"], bins=5)
-        grouped = df_filtered.groupby(["DistanceGroup", "Attrition"]).size().unstack()
-        fig, ax = plt.subplots(figsize=(10, 6))
-        grouped.plot(kind="bar", stacked=True, color=["blue", "orange"], ax=ax)
-        ax.set_xlabel("Distance from Home Groups", fontsize=12)
-        ax.set_ylabel("Count", fontsize=12)
-        ax.set_title("Attrition Counts by Distance from Home Groups", fontsize=14)
-        ax.legend(["Attrition = No", "Attrition = Yes"], fontsize=10)
-        st.pyplot(fig)
+    # Residuenplot
+    st.subheader("Residual Plot: Evaluating Model Fit")
+    residuals = y - model.predict(X_scaled)
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.scatter(X["TotalWorkingYears"], residuals, color="blue", alpha=0.5)
+    ax.axhline(0, color="red", linestyle="--", linewidth=2)
+    ax.set_xlabel("Total Working Years (Years)", fontsize=12)
+    ax.set_ylabel("Residuals", fontsize=12)
+    ax.set_title("Residual Plot: Total Working Years vs. Monthly Income", fontsize=14)
+    st.pyplot(fig)
 
 else:
-    st.error("The required columns 'DistanceFromHome' and 'Attrition' are not found in the dataset.")
+    st.error("The required columns 'TotalWorkingYears', 'MonthlyIncome', and 'JobLevel' are not found in the dataset.")
+
 
