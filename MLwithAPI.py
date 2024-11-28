@@ -1,22 +1,5 @@
-# Berechnung zusätzlicher Metriken
-n = len(y)  # Anzahl der Beobachtungen
-k = X.shape[1]  # Anzahl der Prädiktoren
-
-# Adjusted R²
-adjusted_r2 = 1 - ((1 - r2) * (n - 1) / (n - k - 1))
-
-# RMSE
-rmse = np.sqrt(mse)
-
-# Modellbewertung anzeigen
-st.subheader("Model Metrics")
-st.write(f"R²: {r2:.2f}")
-st.write(f"Adjusted R²: {adjusted_r2:.2f}")
-st.write(f"Mean Squared Error (MSE): {mse:.2f}")
-st.write(f"Root Mean Squared Error (RMSE): {rmse:.2f}")
-
-# **3D-Visualisierung mit zusätzlichen Metriken**
-st.subheader("3D Visualization with Model Metrics")
+# **3D-Visualisierung mit 45-Grad-Drehung nach links**
+st.subheader("3D Visualization with 45-Degree Rotation to the Left")
 fig = plt.figure(figsize=(12, 8))
 ax = fig.add_subplot(111, projection='3d')
 
@@ -69,19 +52,14 @@ ax.plot_surface(x_surf, y_surf, z_surf, cmap="viridis", alpha=0.3, edgecolor="no
 ax.set_xlabel("Total Working Years")
 ax.set_ylabel("Job Level")
 ax.set_zlabel("Monthly Income")
-ax.set_title("3D Regression with Metrics")
+ax.set_title("3D Regression with 45-Degree Rotation to the Left")
 
 # **Anpassung der Perspektive**
-ax.view_init(elev=15, azim=-30)  # Perspektive anpassen
-
-# Metriken als Text anzeigen
-ax.text2D(0.05, 0.95, f"R²: {r2:.2f}", transform=ax.transAxes, fontsize=10, color="black")
-ax.text2D(0.05, 0.90, f"Adjusted R²: {adjusted_r2:.2f}", transform=ax.transAxes, fontsize=10, color="black")
-ax.text2D(0.05, 0.85, f"RMSE: {rmse:.2f}", transform=ax.transAxes, fontsize=10, color="black")
-ax.text2D(0.05, 0.80, f"MSE: {mse:.2f}", transform=ax.transAxes, fontsize=10, color="black")
+ax.view_init(elev=18, azim=-30)  # Elevation bleibt 10, Azimut um 45 Grad nach links gedreht (-15)
 
 # Legende hinzufügen
 ax.legend(loc="best")
 st.pyplot(fig)
+
 
 
