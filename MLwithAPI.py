@@ -132,7 +132,7 @@ ax.set_zlabel("Monthly Income")
 ax.set_title("3D Regression with Job Levels and Deviations")
 
 # **Anpassung der Perspektive**
-ax.view_init(elev=10, azim=-60)  # Elevation und Azimut angepasst für die gewünschte Ansicht
+ax.view_init(elev=10, azim=-15)  # Elevation und Azimut angepasst für die gewünschte Ansicht
 
 # Legende hinzufügen
 ax.legend(loc="best")
