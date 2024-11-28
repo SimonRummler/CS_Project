@@ -84,17 +84,4 @@ if "TotalWorkingYears" in df.columns and "MonthlyIncome" in df.columns and "JobL
     ax.legend()
     st.pyplot(fig)
 
-    # Residuenplot
-    st.subheader("Residual Plot: Evaluating Model Fit")
-    residuals = y - model.predict(X_scaled)
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.scatter(X.flatten(), residuals, color="blue", alpha=0.5)
-    ax.axhline(0, color="red", linestyle="--", linewidth=2)
-    ax.set_xlabel("Total Working Years (Years)", fontsize=12)
-    ax.set_ylabel("Residuals", fontsize=12)
-    ax.set_title("Residual Plot: Total Working Years vs. Monthly Income", fontsize=14)
-    st.pyplot(fig)
-
-else:
-    st.error("The required columns 'TotalWorkingYears', 'MonthlyIncome', and 'JobLevel' are not found in the dataset.")
-
+   
