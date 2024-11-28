@@ -9,7 +9,7 @@ from sklearn.utils import resample
 from sklearn.metrics import mean_squared_error, r2_score
 
 # Titel der Streamlit-App
-st.title("Enhanced Linear Regression: Total Working Years, Job Level vs. Monthly Income")
+st.title("Enhanced Linear Regression: Total Working Years and Job Level")
 
 # Daten aus der CSV-Datei laden
 csv_file = "HR_Dataset_Group4.5.csv"  # Dateiname im Repository
@@ -24,8 +24,8 @@ if "TotalWorkingYears" in df.columns and "MonthlyIncome" in df.columns and "JobL
     # Relevante Spalten filtern und NaN-Werte entfernen
     df_filtered = df[["TotalWorkingYears", "MonthlyIncome", "JobLevel"]].dropna()
 
-    # Features und Zielvariable definieren (mit JobLevel)
-    X = df_filtered[["TotalWorkingYears", "JobLevel"]].values  # Zwei Inputs: Berufsjahre und JobLevel
+    # Features und Zielvariable definieren
+    X = df_filtered[["TotalWorkingYears", "JobLevel"]].values  # Berufsjahre und JobLevel als Inputs
     y = df_filtered["MonthlyIncome"].values
 
     # Standardisierung der Eingabedaten
@@ -46,9 +46,26 @@ if "TotalWorkingYears" in df.columns and "MonthlyIncome" in df.columns and "JobL
     mse = mean_squared_error(y_test, y_pred)
     r2 = r2_score(y_test, y_pred)
 
+    # Ergebnisse anzeigen
     st.subheader("Model Evaluation")
     st.write(f"Mean Squared Error (MSE): {mse:.2f}")
     st.write(f"R² Score: {r2:.2f}")
+
+    # Eingabefelder für Benutzer
+    st.subheader("Predict Monthly Income")
+    total_working_years = st.number_input("Enter Total Working Years", min_value=0, max_value=50, step=1)
+    job_level = st.selectbox("Select Job Level", options=range(1, 6))  # Annahme: JobLevel von 1 bis 5
+
+    predicted_income = None  # Initialisierung
+
+    if st.button("Predict Income"):
+        # Neue Eingaben standardisieren
+        input_data = np.array([[total_working_years, job_level]])
+        input_scaled = scaler.transform(input_data)
+
+        # Vorhersage basierend auf Eingaben
+        predicted_income = model.predict(input_scaled)[0]
+        st.write(f"Predicted Monthly Income: ${predicted_income:.2f}")
 
     # Konfidenzintervalle berechnen
     preds = []
@@ -73,10 +90,14 @@ if "TotalWorkingYears" in df.columns and "MonthlyIncome" in df.columns and "JobL
         X[:, 0], lower, upper, color="gray", alpha=0.3, label="Confidence Interval"
     )
 
-    # Regressionslinie
+    # Regressionslinie simuliert für mittleres JobLevel
     X_temp = X_scaled.copy()
-    X_temp[:, 1] = 0  # Mittleres JobLevel simulieren, um Regressionslinie für TotalWorkingYears zu sehen
+    X_temp[:, 1] = 0  # Mittleres JobLevel simulieren
     ax.plot(X[:, 0], model.predict(X_temp), color="red", linewidth=2, label="Regression Line (Average JobLevel)")
+
+    # Wenn Vorhersage gemacht wurde, füge schwarzen Punkt hinzu
+    if predicted_income is not None:
+        ax.scatter(total_working_years, predicted_income, color="black", s=100, label="Predicted Income", zorder=5)
 
     # Achsentitel und Beschriftungen
     ax.set_xlabel("Total Working Years (Years)", fontsize=12)
@@ -85,16 +106,6 @@ if "TotalWorkingYears" in df.columns and "MonthlyIncome" in df.columns and "JobL
     ax.legend()
     st.pyplot(fig)
 
-    # Residuenplot
-    st.subheader("Residual Plot: Evaluating Model Fit")
-    residuals = y - model.predict(X_scaled)
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.scatter(X[:, 0], residuals, color="blue", alpha=0.5)
-    ax.axhline(0, color="red", linestyle="--", linewidth=2)
-    ax.set_xlabel("Total Working Years (Years)", fontsize=12)
-    ax.set_ylabel("Residuals", fontsize=12)
-    ax.set_title("Residual Plot: Total Working Years, Job Level vs. Monthly Income", fontsize=14)
-    st.pyplot(fig)
-
 else:
     st.error("The required columns 'TotalWorkingYears', 'MonthlyIncome', and 'JobLevel' are not found in the dataset.")
+
