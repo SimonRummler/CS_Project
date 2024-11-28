@@ -1,8 +1,18 @@
+import streamlit as st
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.utils import resample
+from sklearn.metrics import mean_squared_error, r2_score
+
 # Titel der Streamlit-App
-st.title("Linear Regression: Total Working Years vs. Monthly Income (JobLevel for Visualization)")
+st.title("Linear Regression: Total Working Years vs. Monthly Income (Job Level Prediction)")
 
 # Daten aus der CSV-Datei laden
-csv_file = "HR_Dataset_Group4.5.csv"  # Dateiname im Repository
+csv_file = "HR_Dataset_Group4.5.csv"  # Dateiname
 try:
     df = pd.read_csv(csv_file, sep=";")  # Semikolon als Trennzeichen
 except FileNotFoundError:
@@ -10,107 +20,110 @@ except FileNotFoundError:
     st.stop()
 
 # Prüfen, ob die erforderlichen Spalten existieren
-if "TotalWorkingYears" in df.columns and "MonthlyIncome" in df.columns and "JobLevel" in df.columns:
-    # Relevante Spalten filtern und NaN-Werte entfernen
-    df_filtered = df[["TotalWorkingYears", "MonthlyIncome", "JobLevel"]].dropna()
+required_columns = ["TotalWorkingYears", "MonthlyIncome", "JobLevel"]
+if not all(col in df.columns for col in required_columns):
+    st.error(f"The required columns {required_columns} are not found in the dataset.")
+    st.stop()
 
-    # Features und Zielvariable definieren
-    X = df_filtered[["TotalWorkingYears"]].values  # Nur TotalWorkingYears als Input
-    y_income = df_filtered["MonthlyIncome"].values
-    y_joblevel = df_filtered["JobLevel"].values
+# Relevante Spalten filtern und NaN-Werte entfernen
+df_filtered = df[required_columns].dropna()
 
-    # Standardisierung der Eingabedaten
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
+# Features und Zielvariablen definieren
+X = df_filtered[["TotalWorkingYears"]].values
+y_income = df_filtered["MonthlyIncome"].values
+y_joblevel = df_filtered["JobLevel"].values
 
-    # Train-Test-Split für beide Modelle
-    X_train, X_test, y_income_train, y_income_test = train_test_split(X_scaled, y_income, test_size=0.2, random_state=42)
-    _, _, y_joblevel_train, y_joblevel_test = train_test_split(X_scaled, y_joblevel, test_size=0.2, random_state=42)
+# Standardisierung der Eingabedaten
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
 
-    # Modelle trainieren
-    income_model = LinearRegression()
-    income_model.fit(X_train, y_income_train)
+# Train-Test-Split
+X_train, X_test, y_income_train, y_income_test = train_test_split(
+    X_scaled, y_income, test_size=0.2, random_state=42
+)
+_, _, y_joblevel_train, y_joblevel_test = train_test_split(
+    X_scaled, y_joblevel, test_size=0.2, random_state=42
+)
 
-    joblevel_model = LinearRegression()
-    joblevel_model.fit(X_train, y_joblevel_train)
+# Modelle trainieren
+income_model = LinearRegression()
+income_model.fit(X_train, y_income_train)
 
-    # Vorhersagen für Testdaten
-    y_income_pred = income_model.predict(X_test)
-    y_joblevel_pred = joblevel_model.predict(X_test)
+joblevel_model = LinearRegression()
+joblevel_model.fit(X_train, y_joblevel_train)
 
-    # Modellbewertung
-    mse_income = mean_squared_error(y_income_test, y_income_pred)
-    r2_income = r2_score(y_income_test, y_income_pred)
-    mse_joblevel = mean_squared_error(y_joblevel_test, y_joblevel_pred)
-    r2_joblevel = r2_score(y_joblevel_test, y_joblevel_pred)
+# Vorhersagen für Testdaten
+y_income_pred = income_model.predict(X_test)
+y_joblevel_pred = joblevel_model.predict(X_test)
 
-    # Ergebnisse anzeigen
-    st.subheader("Model Evaluation")
-    st.write(f"Income Model - Mean Squared Error (MSE): {mse_income:.2f}, R² Score: {r2_income:.2f}")
-    st.write(f"Job Level Model - Mean Squared Error (MSE): {mse_joblevel:.2f}, R² Score: {r2_joblevel:.2f}")
+# Modellbewertung
+mse_income = mean_squared_error(y_income_test, y_income_pred)
+r2_income = r2_score(y_income_test, y_income_pred)
 
-    # Eingabefelder für Benutzer
-    st.subheader("Predict Monthly Income and Job Level")
-    total_working_years = st.number_input("Enter Total Working Years", min_value=0, max_value=50, step=1)
+mse_joblevel = mean_squared_error(y_joblevel_test, y_joblevel_pred)
+r2_joblevel = r2_score(y_joblevel_test, y_joblevel_pred)
 
-    predicted_income = None
-    predicted_joblevel = None
+# Ergebnisse anzeigen
+st.subheader("Model Evaluation")
+st.write(f"Income Model - Mean Squared Error (MSE): {mse_income:.2f}")
+st.write(f"Income Model - R² Score: {r2_income:.2f}")
+st.write(f"Job Level Model - Mean Squared Error (MSE): {mse_joblevel:.2f}")
+st.write(f"Job Level Model - R² Score: {r2_joblevel:.2f}")
 
-    if st.button("Predict"):
-        # Neue Eingaben standardisieren
-        input_data = np.array([[total_working_years]])
-        input_scaled = scaler.transform(input_data)
+# Eingabefelder für Benutzer
+st.subheader("Predict Monthly Income and Job Level")
+total_working_years = st.number_input("Enter Total Working Years", min_value=0, max_value=50, step=1)
 
-        # Vorhersage basierend auf Eingaben
-        predicted_income = income_model.predict(input_scaled)[0]
-        predicted_joblevel = joblevel_model.predict(input_scaled)[0]
+if st.button("Predict"):
+    input_data = np.array([[total_working_years]])
+    input_scaled = scaler.transform(input_data)
 
-        st.write(f"Predicted Monthly Income: ${predicted_income:.2f}")
-        st.write(f"Predicted Job Level (rounded): {round(predicted_joblevel)}")
+    predicted_income = income_model.predict(input_scaled)[0]
+    predicted_joblevel = joblevel_model.predict(input_scaled)[0]
 
-    # Konfidenzintervalle berechnen
-    preds_income = []
-    preds_joblevel = []
-    for _ in range(100):  # Bootstrap-Resampling
-        X_sample, y_income_sample = resample(X_train, y_income_train)
-        y_joblevel_sample = resample(y_joblevel_train, random_state=42)[0]
-        income_model.fit(X_sample, y_income_sample)
-        joblevel_model.fit(X_sample, y_joblevel_sample)
-        preds_income.append(income_model.predict(X_scaled))
-        preds_joblevel.append(joblevel_model.predict(X_scaled))
-    lower_income = np.percentile(preds_income, 2.5, axis=0)
-    upper_income = np.percentile(preds_income, 97.5, axis=0)
-    lower_joblevel = np.percentile(preds_joblevel, 2.5, axis=0)
-    upper_joblevel = np.percentile(preds_joblevel, 97.5, axis=0)
+    st.write(f"Predicted Monthly Income: ${predicted_income:.2f}")
+    st.write(f"Predicted Job Level (rounded): {round(predicted_joblevel)}")
 
-    # Hauptplot mit Konfidenzintervallen und Farbkodierung nach JobLevel
-    st.subheader("Visualization: Regression with Confidence Intervals")
-    fig, ax = plt.subplots(figsize=(10, 6))
-    scatter = ax.scatter(
-        X.flatten(), y_income, c=df_filtered["JobLevel"], cmap="viridis", s=10, alpha=0.5, label="Data Points"
-    )
-    colorbar = fig.colorbar(scatter, ax=ax)
-    colorbar.set_label("Job Level")
+# Konfidenzintervalle berechnen
+st.subheader("Visualization: Regression with Confidence Intervals")
+preds_income = []
+preds_joblevel = []
 
-    # Konfidenzintervall hinzufügen
-    ax.fill_between(
-        X.flatten(), lower_income, upper_income, color="gray", alpha=0.3, label="Confidence Interval"
-    )
+for _ in range(100):  # Bootstrap-Resampling
+    X_sample, y_income_sample = resample(X_train, y_income_train)
+    income_model.fit(X_sample, y_income_sample)
+    preds_income.append(income_model.predict(X_scaled))
 
-    # Regressionslinie
-    ax.plot(X.flatten(), income_model.predict(X_scaled), color="red", linewidth=2, label="Income Regression Line")
+    X_sample, y_joblevel_sample = resample(X_train, y_joblevel_train)
+    joblevel_model.fit(X_sample, y_joblevel_sample)
+    preds_joblevel.append(joblevel_model.predict(X_scaled))
 
-    # Wenn Vorhersage gemacht wurde, füge schwarzen Punkt hinzu
-    if predicted_income is not None:
-        ax.scatter(total_working_years, predicted_income, color="black", s=100, label="Predicted Income", zorder=5)
+lower_income = np.percentile(preds_income, 2.5, axis=0)
+upper_income = np.percentile(preds_income, 97.5, axis=0)
 
-    # Achsentitel und Beschriftungen
-    ax.set_xlabel("Total Working Years (Years)", fontsize=12)
-    ax.set_ylabel("Monthly Income (in USD)", fontsize=12)
-    ax.set_title("Linear Regression: Total Working Years vs. Monthly Income", fontsize=14)
-    ax.legend()
-    st.pyplot(fig)
+# Hauptplot
+fig, ax = plt.subplots(figsize=(10, 6))
+scatter = ax.scatter(
+    X.flatten(), y_income, c=df_filtered["JobLevel"], cmap="viridis", s=10, alpha=0.5, label="Data Points"
+)
+colorbar = fig.colorbar(scatter, ax=ax)
+colorbar.set_label("Job Level")
 
-else:
-    st.error("The required columns 'TotalWorkingYears', 'MonthlyIncome', and 'JobLevel' are not found in the dataset.")
+# Konfidenzintervall hinzufügen
+ax.fill_between(
+    X.flatten(), lower_income, upper_income, color="gray", alpha=0.3, label="Confidence Interval"
+)
 
+# Regressionslinie
+ax.plot(X.flatten(), income_model.predict(X_scaled), color="red", linewidth=2, label="Income Regression Line")
+
+# Wenn Vorhersage gemacht wurde, füge schwarzen Punkt hinzu
+if st.button("Show Prediction on Plot"):
+    ax.scatter(total_working_years, predicted_income, color="black", s=100, label="Predicted Income", zorder=5)
+
+# Achsentitel und Beschriftungen
+ax.set_xlabel("Total Working Years (Years)", fontsize=12)
+ax.set_ylabel("Monthly Income (in USD)", fontsize=12)
+ax.set_title("Linear Regression: Total Working Years vs. Monthly Income", fontsize=14)
+ax.legend()
+st.pyplot(fig)
