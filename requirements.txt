@@ -7,3 +7,4 @@ google-auth         # Für die Authentifizierung mit Google APIs
 google-auth-oauthlib # Optional, für OAuth-Flows falls nötig
 google-auth-httplib2 # Für HTTP-Transport mit Google APIs
 google-api-python-client # Für die Google Sheets API
+seaborn
