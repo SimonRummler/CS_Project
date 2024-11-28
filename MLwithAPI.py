@@ -9,7 +9,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 import matplotlib.pyplot as plt
 
 # Google API Credentials aus Streamlit Secrets laden
-credentials_info = st.secrets["GOOGLE_CREDENTIALS"]
+credentials_info = st.secrets["Versuch"]
 
 # Service Account Credentials erstellen
 credentials = service_account.Credentials.from_service_account_info(
