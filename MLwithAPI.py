@@ -21,7 +21,7 @@ service = build('sheets', 'v4', credentials=credentials)
 
 # Google Sheets Konfiguration
 SPREADSHEET_ID = "19CC438qwcEpCufbyukbzQ1RmVW9uZ1VK6rFHtXNU8IU"  # Spreadsheet ID
-RANGE_NAME = "sheet1"  # Der gesamte Sheet-Name
+RANGE_NAME = "HR-Data"  # Der gesamte Sheet-Name
 
 # Daten aus Google Sheets abrufen
 sheet = service.spreadsheets()
