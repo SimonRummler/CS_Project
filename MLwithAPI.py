@@ -1,84 +1,116 @@
-import streamlit as st
-import pandas as pd
-import json
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error, r2_score
-import matplotlib.pyplot as plt
+# Titel der Streamlit-App
+st.title("Linear Regression: Total Working Years vs. Monthly Income (JobLevel for Visualization)")
 
-# Google API Credentials aus Streamlit Secrets laden
-credentials_info = st.secrets["Versuch"]
+# Daten aus der CSV-Datei laden
+csv_file = "HR_Dataset_Group4.5.csv"  # Dateiname im Repository
+try:
+    df = pd.read_csv(csv_file, sep=";")  # Semikolon als Trennzeichen
+except FileNotFoundError:
+    st.error("CSV file not found. Please check the file path.")
+    st.stop()
 
-# Service Account Credentials erstellen
-credentials = service_account.Credentials.from_service_account_info(
-    json.loads(credentials_info)
-)
+# Prüfen, ob die erforderlichen Spalten existieren
+if "TotalWorkingYears" in df.columns and "MonthlyIncome" in df.columns and "JobLevel" in df.columns:
+    # Relevante Spalten filtern und NaN-Werte entfernen
+    df_filtered = df[["TotalWorkingYears", "MonthlyIncome", "JobLevel"]].dropna()
 
-# Verbindung zur Google Sheets API herstellen
-service = build('sheets', 'v4', credentials=credentials)
+    # Features und Zielvariable definieren
+    X = df_filtered[["TotalWorkingYears"]].values  # Nur TotalWorkingYears als Input
+    y_income = df_filtered["MonthlyIncome"].values
+    y_joblevel = df_filtered["JobLevel"].values
 
-# Google Sheets Konfiguration
-SPREADSHEET_ID = "19CC438qwcEpCufbyukbzQ1RmVW9uZ1VK6rFHtXNU8IU"  # Spreadsheet ID
-RANGE_NAME = "HR-Data"  # Der gesamte Sheet-Name
+    # Standardisierung der Eingabedaten
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
 
-# Daten aus Google Sheets abrufen
-sheet = service.spreadsheets()
-result = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=RANGE_NAME).execute()
-values = result.get("values", [])
+    # Train-Test-Split für beide Modelle
+    X_train, X_test, y_income_train, y_income_test = train_test_split(X_scaled, y_income, test_size=0.2, random_state=42)
+    _, _, y_joblevel_train, y_joblevel_test = train_test_split(X_scaled, y_joblevel, test_size=0.2, random_state=42)
 
-# Daten in einen DataFrame umwandeln
-if not values:
-    st.error("Keine Daten im Google Sheet gefunden!")
+    # Modelle trainieren
+    income_model = LinearRegression()
+    income_model.fit(X_train, y_income_train)
+
+    joblevel_model = LinearRegression()
+    joblevel_model.fit(X_train, y_joblevel_train)
+
+    # Vorhersagen für Testdaten
+    y_income_pred = income_model.predict(X_test)
+    y_joblevel_pred = joblevel_model.predict(X_test)
+
+    # Modellbewertung
+    mse_income = mean_squared_error(y_income_test, y_income_pred)
+    r2_income = r2_score(y_income_test, y_income_pred)
+    mse_joblevel = mean_squared_error(y_joblevel_test, y_joblevel_pred)
+    r2_joblevel = r2_score(y_joblevel_test, y_joblevel_pred)
+
+    # Ergebnisse anzeigen
+    st.subheader("Model Evaluation")
+    st.write(f"Income Model - Mean Squared Error (MSE): {mse_income:.2f}, R² Score: {r2_income:.2f}")
+    st.write(f"Job Level Model - Mean Squared Error (MSE): {mse_joblevel:.2f}, R² Score: {r2_joblevel:.2f}")
+
+    # Eingabefelder für Benutzer
+    st.subheader("Predict Monthly Income and Job Level")
+    total_working_years = st.number_input("Enter Total Working Years", min_value=0, max_value=50, step=1)
+
+    predicted_income = None
+    predicted_joblevel = None
+
+    if st.button("Predict"):
+        # Neue Eingaben standardisieren
+        input_data = np.array([[total_working_years]])
+        input_scaled = scaler.transform(input_data)
+
+        # Vorhersage basierend auf Eingaben
+        predicted_income = income_model.predict(input_scaled)[0]
+        predicted_joblevel = joblevel_model.predict(input_scaled)[0]
+
+        st.write(f"Predicted Monthly Income: ${predicted_income:.2f}")
+        st.write(f"Predicted Job Level (rounded): {round(predicted_joblevel)}")
+
+    # Konfidenzintervalle berechnen
+    preds_income = []
+    preds_joblevel = []
+    for _ in range(100):  # Bootstrap-Resampling
+        X_sample, y_income_sample = resample(X_train, y_income_train)
+        y_joblevel_sample = resample(y_joblevel_train, random_state=42)[0]
+        income_model.fit(X_sample, y_income_sample)
+        joblevel_model.fit(X_sample, y_joblevel_sample)
+        preds_income.append(income_model.predict(X_scaled))
+        preds_joblevel.append(joblevel_model.predict(X_scaled))
+    lower_income = np.percentile(preds_income, 2.5, axis=0)
+    upper_income = np.percentile(preds_income, 97.5, axis=0)
+    lower_joblevel = np.percentile(preds_joblevel, 2.5, axis=0)
+    upper_joblevel = np.percentile(preds_joblevel, 97.5, axis=0)
+
+    # Hauptplot mit Konfidenzintervallen und Farbkodierung nach JobLevel
+    st.subheader("Visualization: Regression with Confidence Intervals")
+    fig, ax = plt.subplots(figsize=(10, 6))
+    scatter = ax.scatter(
+        X.flatten(), y_income, c=df_filtered["JobLevel"], cmap="viridis", s=10, alpha=0.5, label="Data Points"
+    )
+    colorbar = fig.colorbar(scatter, ax=ax)
+    colorbar.set_label("Job Level")
+
+    # Konfidenzintervall hinzufügen
+    ax.fill_between(
+        X.flatten(), lower_income, upper_income, color="gray", alpha=0.3, label="Confidence Interval"
+    )
+
+    # Regressionslinie
+    ax.plot(X.flatten(), income_model.predict(X_scaled), color="red", linewidth=2, label="Income Regression Line")
+
+    # Wenn Vorhersage gemacht wurde, füge schwarzen Punkt hinzu
+    if predicted_income is not None:
+        ax.scatter(total_working_years, predicted_income, color="black", s=100, label="Predicted Income", zorder=5)
+
+    # Achsentitel und Beschriftungen
+    ax.set_xlabel("Total Working Years (Years)", fontsize=12)
+    ax.set_ylabel("Monthly Income (in USD)", fontsize=12)
+    ax.set_title("Linear Regression: Total Working Years vs. Monthly Income", fontsize=14)
+    ax.legend()
+    st.pyplot(fig)
+
 else:
-    # Erste Zeile als Header verwenden
-    df = pd.DataFrame(values[1:], columns=values[0])  # Daten ab Zeile 2, Header ist Zeile 1
+    st.error("The required columns 'TotalWorkingYears', 'MonthlyIncome', and 'JobLevel' are not found in the dataset.")
 
-    # Konvertiere numerische Spalten (falls notwendig)
-    if "Performance" in df.columns and "Salary" in df.columns:
-        df["Performance"] = pd.to_numeric(df["Performance"], errors="coerce")
-        df["Salary"] = pd.to_numeric(df["Salary"], errors="coerce")
-
-        # Filtere gültige Zeilen (ohne NaN-Werte)
-        df = df.dropna(subset=["Performance", "Salary"])
-
-        st.write("Daten aus Google Sheets:")
-        st.dataframe(df)
-
-        # Features und Zielvariable definieren
-        X = df[["Performance"]]
-        y = df["Salary"]
-
-        # Daten aufteilen
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-        # Modell trainieren
-        model = LinearRegression()
-        model.fit(X_train, y_train)
-
-        # Vorhersagen für Testdaten
-        y_pred = model.predict(X_test)
-
-        # Modellbewertung
-        mse = mean_squared_error(y_test, y_pred)
-        r2 = r2_score(y_test, y_pred)
-
-        # Ergebnisse anzeigen
-        st.subheader("Modellbewertung")
-        st.write(f"Mean Squared Error (MSE): {mse:.2f}")
-        st.write(f"R² Score: {r2:.2f}")
-
-        # Visualisierung
-        fig, ax = plt.subplots()
-        ax.scatter(X, y, color='blue', label='Datenpunkte')  # Scatterplot
-        ax.plot(X, model.predict(X), color='red', label='Lineare Regression')  # Regressionslinie
-        ax.set_xlabel("Performance")
-        ax.set_ylabel("Salary")
-        ax.set_title("Lineare Regression: Performance vs. Salary")
-        ax.legend()
-
-        # Plot in Streamlit anzeigen
-        st.pyplot(fig)
-    else:
-        st.error("Die benötigten Spalten 'Performance' und 'Salary' wurden nicht gefunden!")
