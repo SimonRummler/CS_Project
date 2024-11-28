@@ -1,5 +1,5 @@
-# **3D-Visualisierung mit 45-Grad-Drehung nach links**
-st.subheader("3D Visualization with 45-Degree Rotation to the Left")
+# **3D-Visualisierung mit `Job Level` im Vordergrund**
+st.subheader("3D Visualization with Job Level in the Front")
 fig = plt.figure(figsize=(12, 8))
 ax = fig.add_subplot(111, projection='3d')
 
@@ -52,14 +52,13 @@ ax.plot_surface(x_surf, y_surf, z_surf, cmap="viridis", alpha=0.3, edgecolor="no
 ax.set_xlabel("Total Working Years")
 ax.set_ylabel("Job Level")
 ax.set_zlabel("Monthly Income")
-ax.set_title("3D Regression with 45-Degree Rotation to the Left")
+ax.set_title("3D Regression with Job Level in the Front")
 
 # **Anpassung der Perspektive**
-ax.view_init(elev=18, azim=-30)  # Elevation bleibt 10, Azimut um 45 Grad nach links gedreht (-15)
+ax.view_init(elev=18, azim=-30)  # Elevation und Azimut angepasst, um Job Level nach vorne zu bringen
 
 # Legende hinzufügen
 ax.legend(loc="best")
 st.pyplot(fig)
-
 
 
