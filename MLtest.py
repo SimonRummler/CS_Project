@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import mean_squared_error, r2_score, accuracy_score, confusion_matrix, classification_report
-import seaborn as sns
+from sklearn.preprocessing import StandardScaler
 import numpy as np
 
 # Titel der Streamlit-App
@@ -18,7 +18,7 @@ except FileNotFoundError:
     st.error("CSV file not found. Please check the file path.")
     st.stop()
 
-# Lineare Regression: Total Working Years vs. Monthly Income
+# Abschnitt 1: Lineare Regression: Total Working Years vs. Monthly Income
 st.header("Linear Regression: Total Working Years vs. Monthly Income")
 if "TotalWorkingYears" in df.columns and "MonthlyIncome" in df.columns:
     df_filtered = df[["TotalWorkingYears", "MonthlyIncome"]].dropna()
@@ -61,7 +61,7 @@ if "TotalWorkingYears" in df.columns and "MonthlyIncome" in df.columns:
 else:
     st.error("The required columns 'TotalWorkingYears' and 'MonthlyIncome' are not found in the dataset.")
 
-# Logistische Regression: Distance from Home vs. Attrition
+# Abschnitt 2: Logistische Regression: Distance from Home vs. Attrition
 st.header("Logistic Regression: Distance from Home vs. Attrition")
 if "DistanceFromHome" in df.columns and "Attrition" in df.columns:
     df_filtered = df[["DistanceFromHome", "Attrition"]].dropna()
@@ -70,7 +70,11 @@ if "DistanceFromHome" in df.columns and "Attrition" in df.columns:
     X = df_filtered[["DistanceFromHome"]]
     y = df_filtered["Attrition"]
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    # Standardisierung der Distanzdaten
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+
+    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
 
     model = LogisticRegression()
     model.fit(X_train, y_train)
@@ -88,16 +92,26 @@ if "DistanceFromHome" in df.columns and "Attrition" in df.columns:
     st.write("Classification Report:")
     st.write(pd.DataFrame(report).transpose())
 
+    # Visualisierung nach Klassen
     fig, ax = plt.subplots(figsize=(10, 6))
-    sns.scatterplot(x="DistanceFromHome", y="Attrition", data=df_filtered, alpha=0.7, ax=ax)
-    ax.set_xlabel("Distance from Home (km)")
-    ax.set_ylabel("Attrition (1 = Yes, 0 = No)")
-    ax.set_title("Logistic Regression: Distance from Home vs. Attrition")
-    
+    class_0 = df_filtered[df_filtered["Attrition"] == 0]
+    class_1 = df_filtered[df_filtered["Attrition"] == 1]
+
+    ax.scatter(class_0["DistanceFromHome"], class_0["Attrition"], color='blue', s=20, alpha=0.7, label='Attrition = No')
+    ax.scatter(class_1["DistanceFromHome"], class_1["Attrition"], color='orange', s=20, alpha=0.7, label='Attrition = Yes')
+
+    # Logistische Regressionskurve hinzufügen
     X_range = np.linspace(X.min(), X.max(), 100).reshape(-1, 1)
-    y_prob = model.predict_proba(X_range)[:, 1]
+    X_range_scaled = scaler.transform(X_range)  # Skaliere den Bereich
+    y_prob = model.predict_proba(X_range_scaled)[:, 1]
     ax.plot(X_range, y_prob, color="red", linewidth=2, label="Logistic Regression Curve")
-    ax.legend()
+
+    ax.set_xlabel("Distance from Home (km)", fontsize=12)
+    ax.set_ylabel("Probability of Attrition", fontsize=12)
+    ax.set_title("Logistic Regression: Distance from Home vs. Attrition", fontsize=14)
+    ax.legend(fontsize=10)
+    ax.grid(True, linestyle="--", alpha=0.7)
     st.pyplot(fig)
 else:
     st.error("The required columns 'DistanceFromHome' and 'Attrition' are not found in the dataset.")
+
