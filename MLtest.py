@@ -21,6 +21,15 @@ if "TotalWorkingYears" in df.columns and "MonthlyIncome" in df.columns:
     # Filter relevant columns and drop NaN values
     df_filtered = df[["TotalWorkingYears", "MonthlyIncome"]].dropna()
 
+    # Remove outliers using IQR (Interquartile Range)
+    Q1 = df_filtered["MonthlyIncome"].quantile(0.25)
+    Q3 = df_filtered["MonthlyIncome"].quantile(0.75)
+    IQR = Q3 - Q1
+    df_filtered = df_filtered[
+        (df_filtered["MonthlyIncome"] >= Q1 - 1.5 * IQR) & 
+        (df_filtered["MonthlyIncome"] <= Q3 + 1.5 * IQR)
+    ]
+
     # Define features (X) and target variable (y)
     X = df_filtered[["TotalWorkingYears"]]
     y = df_filtered["MonthlyIncome"]
@@ -45,13 +54,18 @@ if "TotalWorkingYears" in df.columns and "MonthlyIncome" in df.columns:
     st.write(f"R² Score: {r2:.2f}")
 
     # Create visualization
-    fig, ax = plt.subplots()
-    ax.scatter(X, y, color='blue', s=20, label='Data Points')  # Scatter plot with smaller circles
-    ax.plot(X, model.predict(X), color='red', label='Linear Regression')  # Regression line
-    ax.set_xlabel("Total Working Years")
-    ax.set_ylabel("Monthly Income")
-    ax.set_title("Linear Regression: Total Working Years vs. Monthly Income")
-    ax.legend()
+    fig, ax = plt.subplots(figsize=(10, 6))  # Larger plot size
+    ax.scatter(X, y, color='blue', s=10, alpha=0.7, label='Data Points')  # Smaller points with transparency
+    ax.plot(X, model.predict(X), color='red', linewidth=2, label='Linear Regression')  # Regression line
+
+    # Enhanced labels and title
+    ax.set_xlabel("Total Working Years (Years)", fontsize=12)
+    ax.set_ylabel("Monthly Income (in USD)", fontsize=12)
+    ax.set_title("Linear Regression: Total Working Years vs. Monthly Income", fontsize=14)
+    ax.legend(fontsize=10)
+
+    # Add grid for better readability
+    ax.grid(True, linestyle='--', alpha=0.7)
 
     # Display plot in Streamlit
     st.pyplot(fig)
