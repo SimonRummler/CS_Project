@@ -9,7 +9,7 @@ from sklearn.utils import resample
 from sklearn.metrics import mean_squared_error, r2_score
 
 # Titel der Streamlit-App
-st.title("Enhanced Linear Regression: Total Working Years vs. Monthly Income")
+st.title("Linear Regression: Total Working Years vs. Monthly Income")
 
 # Daten aus der CSV-Datei laden
 csv_file = "HR_Dataset_Group4.5.csv"  # Dateiname im Repository
