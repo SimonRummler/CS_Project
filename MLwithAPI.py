@@ -72,17 +72,10 @@ ax.set_title("Predicted Monthly Income vs. Total Working Years (Color: Job Level
 cbar = plt.colorbar(scatter, ax=ax)
 cbar.set_label("Job Level")
 
-# Plot der Regressionskurve
-x_curve = np.linspace(X['TotalWorkingYears'].min(), X['TotalWorkingYears'].max(), 500)  # Gleichmäßige Punkte
-mean_job_level = X['JobLevel'].mean()  # Durchschnittlicher JobLevel für die Kurve
-y_curve = model.predict(pd.DataFrame({'TotalWorkingYears': x_curve, 'JobLevel': mean_job_level}))
-ax.plot(x_curve, y_curve, color='red', linewidth=2, label='Regression Curve')
-
 # Benutzereingabe auf dem Graphen darstellen
 ax.scatter(user_working_years, predicted_income, color='black', s=100, label='Your Input', zorder=5)
 ax.legend()
 
 # Plot anzeigen
 st.pyplot(fig)
-
 
