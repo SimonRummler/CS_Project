@@ -1,77 +1,61 @@
-# ... (Ihr bisheriger Code)
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import statsmodels.api as sm
+import streamlit as st
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
 
-# 3D-Visualisierung mit 30-Grad-Drehung
-st.subheader("3D Visualization with 30-Degree Rotation to the Left")
-fig = plt.figure(figsize=(12, 8))
-ax = fig.add_subplot(111, projection='3d')
+# Titel der App
+st.title("Multiple Regression: Monthly Income Prediction")
 
-# Datenpunkte mit Farbcodierung nach JobLevel
-job_levels = df_filtered["JobLevel"].unique()
-colors = sns.color_palette("viridis", len(job_levels))
+# CSV-Datei hochladen
+uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
 
-# Listen für Legenden-Handles und -Labels
-handles = []
-labels = []
+if uploaded_file:
+    # Daten laden
+    df = pd.read_csv(uploaded_file, sep=';')  # Anpassung des Trennzeichens, falls notwendig
+    
+    # Sicherstellen, dass die relevanten Spalten vorhanden sind
+    try:
+        df = df[['TotalWorkingYears', 'JobLevel', 'MonthlyIncome']].dropna()
 
-for i, job_level in enumerate(sorted(job_levels)):
-    # Filter für das jeweilige Job Level
-    level_data = df_filtered[df_filtered["JobLevel"] == job_level]
-    if level_data.empty:
-        st.warning(f"No data found for Job Level {job_level}.")
-        continue
+        # Features und Ziel definieren
+        X = df[['TotalWorkingYears', 'JobLevel']]
+        y = df['MonthlyIncome']
 
-    level_predictions = y_pred_full[df_filtered["JobLevel"] == job_level]
+        # Datenaufteilung in Trainings- und Testdaten
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-    # Punkte über der Regressionslinie markieren
-    above_line = level_data["MonthlyIncome"] > level_predictions
-    below_line = ~above_line
+        # Modelltraining
+        model = LinearRegression()
+        model.fit(X_train, y_train)
 
-    # Punkte über der Linie
-    sc_above = ax.scatter(
-        level_data["TotalWorkingYears"][above_line],
-        level_data["JobLevel"][above_line],
-        level_data["MonthlyIncome"][above_line],
-        color=colors[i],
-        alpha=0.8,
-        marker="^",
-    )
-    # Legenden-Handles und -Labels sammeln
-    handles.append(sc_above)
-    labels.append(f"Job Level {job_level} (Above Line)")
+        # Vorhersagen und Metriken
+        y_pred = model.predict(X_test)
+        mse = mean_squared_error(y_test, y_pred)
+        r2 = r2_score(y_test, y_pred)
 
-    # Punkte unter der Linie
-    sc_below = ax.scatter(
-        level_data["TotalWorkingYears"][below_line],
-        level_data["JobLevel"][below_line],
-        level_data["MonthlyIncome"][below_line],
-        color=colors[i],
-        alpha=0.5,
-        marker="o",
-    )
-    # Legenden-Handles und -Labels sammeln
-    handles.append(sc_below)
-    labels.append(f"Job Level {job_level} (Below Line)")
+        # Regressionsergebnisse anzeigen
+        st.subheader("Regression Results")
+        st.write(f"Mean Squared Error: {mse:.2f}")
+        st.write(f"R² Score: {r2:.2f}")
+        st.write(f"Model Coefficients: {model.coef_}")
+        st.write(f"Intercept: {model.intercept_}")
 
-# Regressionsfläche erstellen
-x_surf, y_surf = np.meshgrid(
-    np.linspace(df_filtered["TotalWorkingYears"].min(), df_filtered["TotalWorkingYears"].max(), 50),
-    np.linspace(df_filtered["JobLevel"].min(), df_filtered["JobLevel"].max(), 50),
-)
-z_surf = model.predict(scaler.transform(np.c_[x_surf.ravel(), y_surf.ravel()])).reshape(x_surf.shape)
+        # Visualisierung
+        fig, ax = plt.subplots()
+        sns.scatterplot(x=y_test, y=y_pred, ax=ax)
+        ax.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], color='red', lw=2)
+        ax.set_xlabel("Actual Monthly Income")
+        ax.set_ylabel("Predicted Monthly Income")
+        ax.set_title("Actual vs Predicted Monthly Income")
+        st.pyplot(fig)
 
-# Regressionsfläche plotten
-ax.plot_surface(x_surf, y_surf, z_surf, cmap="viridis", alpha=0.3, edgecolor="none")
-
-# Achsentitel und Beschriftungen
-ax.set_xlabel("Total Working Years")
-ax.set_ylabel("Job Level")
-ax.set_zlabel("Monthly Income")
-ax.set_title("3D Regression with 30-Degree Rotation to the Left")
-
-# Anpassung der Perspektive
-ax.view_init(elev=10, azim=-38)
-
-# Legende hinzufügen
-ax.legend(handles, labels, loc="best")
-st.pyplot(fig)
+    except KeyError as e:
+        st.error(f"Missing column: {e}")
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
 
