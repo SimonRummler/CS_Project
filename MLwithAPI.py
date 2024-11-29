@@ -1,86 +1,6 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import mean_squared_error, r2_score
-import seaborn as sns
+# ... (Ihr bisheriger Code)
 
-# Titel der Streamlit-App
-st.title("3D Regression Model: Predict Monthly Income based on Job Level and Working Years")
-
-# Daten aus der CSV-Datei laden
-csv_file = "HR_Dataset_Group4.5.csv"
-try:
-    df = pd.read_csv(csv_file, sep=";")
-except FileNotFoundError:
-    st.error("CSV file not found. Please check the file path.")
-    st.stop()
-
-# Prüfen, ob die erforderlichen Spalten existieren
-required_columns = ["TotalWorkingYears", "MonthlyIncome", "JobLevel"]
-if not all(col in df.columns for col in required_columns):
-    st.error(f"The required columns {required_columns} are not found in the dataset.")
-    st.stop()
-
-# Relevante Spalten filtern und NaN-Werte entfernen
-df_filtered = df[required_columns].dropna()
-
-# Features und Zielvariable definieren
-X = df_filtered[["TotalWorkingYears", "JobLevel"]].values
-y = df_filtered["MonthlyIncome"].values
-
-# Standardisierung der Eingabedaten
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
-
-# Train-Test-Split
-X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
-
-# Modell trainieren
-model = LinearRegression()
-model.fit(X_train, y_train)
-
-# Vorhersagen für alle Datenpunkte
-y_pred_full = model.predict(X_scaled)
-
-# Sicherstellen, dass y_pred_full definiert ist
-if "y_pred_full" not in locals() or len(y_pred_full) == 0:
-    st.error("The predictions (y_pred_full) are not defined or empty. Check your model training.")
-    st.stop()
-
-# Modellbewertung
-mse = mean_squared_error(y_test, model.predict(X_test))
-r2 = r2_score(y_test, model.predict(X_test))
-
-# Berechnung zusätzlicher Metriken
-n = len(y)  # Anzahl der Beobachtungen
-k = X.shape[1]  # Anzahl der Prädiktoren
-adjusted_r2 = 1 - ((1 - r2) * (n - 1) / (n - k - 1))  # Adjusted R²
-rmse = np.sqrt(mse)  # Root Mean Squared Error
-
-# Modellbewertung anzeigen
-st.subheader("Model Metrics")
-st.write(f"R²: {r2:.2f}")
-st.write(f"Adjusted R²: {adjusted_r2:.2f}")
-st.write(f"Mean Squared Error (MSE): {mse:.2f}")
-st.write(f"Root Mean Squared Error (RMSE): {rmse:.2f}")
-
-# Interaktive Eingabe: Total Working Years und Job Level
-st.subheader("Predict Monthly Income")
-working_years = st.number_input("Enter Total Working Years", min_value=0, max_value=50, step=1)
-job_level = st.number_input("Enter Job Level", min_value=1, max_value=5, step=1)
-
-if st.button("Predict Income"):
-    input_data = np.array([[working_years, job_level]])
-    input_scaled = scaler.transform(input_data)
-    predicted_income = model.predict(input_scaled)[0]
-    st.write(f"Predicted Monthly Income: ${predicted_income:.2f}")
-
-# **3D-Visualisierung mit 30-Grad-Drehung**
+# 3D-Visualisierung mit 30-Grad-Drehung
 st.subheader("3D Visualization with 30-Degree Rotation to the Left")
 fig = plt.figure(figsize=(12, 8))
 ax = fig.add_subplot(111, projection='3d')
@@ -88,6 +8,10 @@ ax = fig.add_subplot(111, projection='3d')
 # Datenpunkte mit Farbcodierung nach JobLevel
 job_levels = df_filtered["JobLevel"].unique()
 colors = sns.color_palette("viridis", len(job_levels))
+
+# Listen für Legenden-Handles und -Labels
+handles = []
+labels = []
 
 for i, job_level in enumerate(sorted(job_levels)):
     # Filter für das jeweilige Job Level
@@ -103,26 +27,30 @@ for i, job_level in enumerate(sorted(job_levels)):
     below_line = ~above_line
 
     # Punkte über der Linie
-    ax.scatter(
+    sc_above = ax.scatter(
         level_data["TotalWorkingYears"][above_line],
         level_data["JobLevel"][above_line],
         level_data["MonthlyIncome"][above_line],
         color=colors[i],
         alpha=0.8,
-        label=f"Job Level {job_level} (Above Line)",
         marker="^",
     )
+    # Legenden-Handles und -Labels sammeln
+    handles.append(sc_above)
+    labels.append(f"Job Level {job_level} (Above Line)")
 
     # Punkte unter der Linie
-    ax.scatter(
+    sc_below = ax.scatter(
         level_data["TotalWorkingYears"][below_line],
         level_data["JobLevel"][below_line],
         level_data["MonthlyIncome"][below_line],
         color=colors[i],
         alpha=0.5,
-        label=f"Job Level {job_level} (Below Line)",
         marker="o",
     )
+    # Legenden-Handles und -Labels sammeln
+    handles.append(sc_below)
+    labels.append(f"Job Level {job_level} (Below Line)")
 
 # Regressionsfläche erstellen
 x_surf, y_surf = np.meshgrid(
@@ -140,10 +68,10 @@ ax.set_ylabel("Job Level")
 ax.set_zlabel("Monthly Income")
 ax.set_title("3D Regression with 30-Degree Rotation to the Left")
 
-# **Anpassung der Perspektive**
-ax.view_init(elev=10, azim=-38)  # Perspektive: Elevation bleibt 10, Azimut um 30 Grad nach links
+# Anpassung der Perspektive
+ax.view_init(elev=10, azim=-38)
 
 # Legende hinzufügen
-ax.legend(loc="best")
+ax.legend(handles, labels, loc="best")
 st.pyplot(fig)
 
