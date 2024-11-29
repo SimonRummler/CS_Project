@@ -1,87 +1,63 @@
-import streamlit as st
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
+import streamlit as st
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import StandardScaler
-from sklearn.utils import resample
 from sklearn.metrics import mean_squared_error, r2_score
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # Titel der Streamlit-App
-st.title("Linear Regression: Total Working Years vs. Monthly Income")
+st.title("Linear Regression: Total Working Years and Job Level vs. Monthly Income")
 
 # Daten aus der CSV-Datei laden
-csv_file = "HR_Dataset_Group4.5.csv"  # Dateiname im Repository
+csv_file = "HR_Dataset_Group4.5.csv"  # Lokale Datei im gleichen Verzeichnis
 try:
     df = pd.read_csv(csv_file, sep=";")  # Semikolon als Trennzeichen
+    st.write("Daten erfolgreich geladen:")
+    st.write(df.head())
 except FileNotFoundError:
-    st.error("CSV file not found. Please check the file path.")
+    st.error("CSV-Datei nicht gefunden. Bitte prüfen Sie den Dateipfad.")
     st.stop()
 
-# Prüfen, ob die erforderlichen Spalten existieren
-if "TotalWorkingYears" in df.columns and "MonthlyIncome" in df.columns and "JobLevel" in df.columns:
-    # Relevante Spalten filtern und NaN-Werte entfernen
-    df_filtered = df[["TotalWorkingYears", "MonthlyIncome", "JobLevel"]].dropna()
+# Daten validieren
+try:
+    df = df[['TotalWorkingYears', 'JobLevel', 'MonthlyIncome']].dropna()
+except KeyError as e:
+    st.error(f"Fehlende Spalten: {e}")
+    st.stop()
 
-    # Features und Zielvariable definieren
-    X = df_filtered[["TotalWorkingYears"]].values  # Konvertiere in numpy.ndarray
-    y = df_filtered["MonthlyIncome"].values
+# Features und Ziel definieren
+X = df[['TotalWorkingYears', 'JobLevel']]
+y = df['MonthlyIncome']
 
-    # Standardisierung der Eingabedaten
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
+# Datenaufteilung
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-    # Train-Test-Split
-    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+# Regressionstraining
+model = LinearRegression()
+model.fit(X_train, y_train)
 
-    # Modell trainieren
-    model = LinearRegression()
-    model.fit(X_train, y_train)
+# Vorhersagen erstellen
+y_pred = model.predict(X_test)
 
-    # Vorhersagen für Testdaten
-    y_pred = model.predict(X_test)
+# Metriken berechnen
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
 
-    # Modellbewertung
-    mse = mean_squared_error(y_test, y_pred)
-    r2 = r2_score(y_test, y_pred)
+# Ergebnisse anzeigen
+st.subheader("Regression Results")
+st.write(f"Mean Squared Error (MSE): {mse:.2f}")
+st.write(f"R² Score: {r2:.2f}")
+st.write("Model Coefficients:")
+st.write(dict(zip(['TotalWorkingYears', 'JobLevel'], model.coef_)))
+st.write(f"Intercept: {model.intercept_:.2f}")
 
-    # Ergebnisse anzeigen
-    st.subheader("Model Evaluation")
-    st.write(f"Mean Squared Error (MSE): {mse:.2f}")
-    st.write(f"R² Score: {r2:.2f}")
+# Visualisierung
+fig, ax = plt.subplots()
+sns.scatterplot(x=y_test, y=y_pred, ax=ax)
+ax.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], color='red', lw=2)
+ax.set_xlabel("Actual Monthly Income")
+ax.set_ylabel("Predicted Monthly Income")
+ax.set_title("Actual vs Predicted Monthly Income")
+st.pyplot(fig)
 
-    # Konfidenzintervalle berechnen
-    preds = []
-    for _ in range(100):  # Bootstrap-Resampling
-        X_sample, y_sample = resample(X_train, y_train)
-        model.fit(X_sample, y_sample)
-        preds.append(model.predict(X_scaled))
-    lower = np.percentile(preds, 2.5, axis=0)
-    upper = np.percentile(preds, 97.5, axis=0)
-
-    # Hauptplot mit Konfidenzintervallen und Farbkodierung
-    st.subheader("Visualization: Regression with Confidence Intervals")
-    fig, ax = plt.subplots(figsize=(10, 6))
-    scatter = ax.scatter(
-        X.flatten(), y, c=df_filtered["JobLevel"], cmap="viridis", s=10, alpha=0.5, label="Data Points"
-    )
-    colorbar = fig.colorbar(scatter, ax=ax)
-    colorbar.set_label("Job Level")
-
-    # Konfidenzintervall hinzufügen
-    ax.fill_between(
-        X.flatten(), lower, upper, color="gray", alpha=0.3, label="Confidence Interval"
-    )
-
-    # Regressionslinie
-    ax.plot(X.flatten(), model.predict(X_scaled), color="red", linewidth=2, label="Regression Line")
-
-    # Achsentitel und Beschriftungen
-    ax.set_xlabel("Total Working Years (Years)", fontsize=12)
-    ax.set_ylabel("Monthly Income (in USD)", fontsize=12)
-    ax.set_title("Enhanced Linear Regression: Total Working Years vs. Monthly Income", fontsize=14)
-    ax.legend()
-    st.pyplot(fig)
-
-   
