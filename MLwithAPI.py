@@ -7,22 +7,20 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Titel der Streamlit-App
-st.title("Linear Regression: Total Working Years and Job Level vs. Monthly Income")
+st.title("Linear Regression: Total Working Years and Job Level vs. Predicted Monthly Income")
 
 # Daten aus der CSV-Datei laden
 csv_file = "HR_Dataset_Group4.5.csv"  # Lokale Datei im gleichen Verzeichnis
 try:
-    # Lese die CSV-Datei ein
+    # CSV-Datei einlesen
     df = pd.read_csv(csv_file, sep=";")  # Semikolon als Trennzeichen
-    st.write("Daten erfolgreich geladen:")
-    st.write(df.head())  # Zeige die ersten Zeilen der Daten
 except FileNotFoundError:
     st.error("CSV-Datei nicht gefunden. Stelle sicher, dass die Datei korrekt benannt und im richtigen Verzeichnis ist.")
     st.stop()
 
 # Daten validieren
 try:
-    # Selektiere nur die benötigten Spalten
+    # Selektiere nur die relevanten Spalten für die Regression
     df = df[['TotalWorkingYears', 'JobLevel', 'MonthlyIncome']].dropna()
 except KeyError as e:
     st.error(f"Fehlende Spalten: {e}")
@@ -54,13 +52,13 @@ st.write("Model Coefficients:")
 st.write(dict(zip(['TotalWorkingYears', 'JobLevel'], model.coef_)))
 st.write(f"Intercept: {model.intercept_:.2f}")
 
-# Visualisierung
-fig, ax = plt.subplots()
-sns.scatterplot(x=y_test, y=y_pred, ax=ax)
-ax.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], color='red', lw=2)
-ax.set_xlabel("Actual Monthly Income")
+# Visualisierung: Scatterplot mit farbkodiertem JobLevel
+fig, ax = plt.subplots(figsize=(10, 6))
+scatter = ax.scatter(X_test['TotalWorkingYears'], y_pred, c=X_test['JobLevel'], cmap='viridis', s=50, alpha=0.8)
+ax.set_xlabel("Total Working Years")
 ax.set_ylabel("Predicted Monthly Income")
-ax.set_title("Actual vs Predicted Monthly Income")
+ax.set_title("Predicted Monthly Income vs. Total Working Years (Color: Job Level)")
+cbar = plt.colorbar(scatter, ax=ax)
+cbar.set_label("Job Level")
 st.pyplot(fig)
-
 
