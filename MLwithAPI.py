@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import streamlit as st
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
@@ -52,7 +53,17 @@ st.write("Model Coefficients:")
 st.write(dict(zip(['TotalWorkingYears', 'JobLevel'], model.coef_)))
 st.write(f"Intercept: {model.intercept_:.2f}")
 
-# Visualisierung: Scatterplot mit farbkodiertem JobLevel
+# Benutzereingabe für Total Working Years und Job Level
+st.subheader("Predict Monthly Income")
+user_working_years = st.number_input("Enter Total Working Years:", min_value=0, max_value=40, step=1, value=10)
+user_job_level = st.number_input("Enter Job Level:", min_value=1, max_value=5, step=1, value=2)
+
+# Vorhersage des Monthly Income für Benutzereingabe
+user_input = pd.DataFrame({'TotalWorkingYears': [user_working_years], 'JobLevel': [user_job_level]})
+predicted_income = model.predict(user_input)[0]
+st.write(f"Predicted Monthly Income: **{predicted_income:.2f}**")
+
+# Visualisierung: Scatterplot mit farbkodiertem JobLevel und Benutzereingabe
 fig, ax = plt.subplots(figsize=(10, 6))
 scatter = ax.scatter(X_test['TotalWorkingYears'], y_pred, c=X_test['JobLevel'], cmap='viridis', s=50, alpha=0.8)
 ax.set_xlabel("Total Working Years")
@@ -60,5 +71,18 @@ ax.set_ylabel("Predicted Monthly Income")
 ax.set_title("Predicted Monthly Income vs. Total Working Years (Color: Job Level)")
 cbar = plt.colorbar(scatter, ax=ax)
 cbar.set_label("Job Level")
+
+# Plot der Regressionskurve
+x_curve = np.linspace(X['TotalWorkingYears'].min(), X['TotalWorkingYears'].max(), 500)  # Gleichmäßige Punkte
+mean_job_level = X['JobLevel'].mean()  # Durchschnittlicher JobLevel für die Kurve
+y_curve = model.predict(pd.DataFrame({'TotalWorkingYears': x_curve, 'JobLevel': mean_job_level}))
+ax.plot(x_curve, y_curve, color='red', linewidth=2, label='Regression Curve')
+
+# Benutzereingabe auf dem Graphen darstellen
+ax.scatter(user_working_years, predicted_income, color='black', s=100, label='Your Input', zorder=5)
+ax.legend()
+
+# Plot anzeigen
 st.pyplot(fig)
+
 
