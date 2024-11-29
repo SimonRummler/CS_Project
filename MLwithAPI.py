@@ -12,7 +12,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 st.title("Multiple Regression: Monthly Income Prediction")
 
 # CSV-Datei hochladen
-uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
+uploaded_file = st.file_uploader("HR_Dataset_Group4.5.csv", type=["csv"])
 
 if uploaded_file:
     # Daten laden
