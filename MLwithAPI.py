@@ -73,7 +73,7 @@ cbar = plt.colorbar(scatter, ax=ax)
 cbar.set_label("Job Level")
 
 # Benutzereingabe auf dem Graphen darstellen
-ax.scatter(user_working_years, predicted_income, color='black', s=100, label='Your Input', zorder=5)
+ax.scatter(user_working_years, predicted_income, color='red', s=100, label='Your Input', zorder=5)
 ax.legend()
 
 # Plot anzeigen
