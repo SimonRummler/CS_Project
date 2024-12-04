@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 import streamlit as st
 
 # Load data
-data_file = "HR_Dataset_Group4.5.xlsx"  # Ensure the file path is correct
-df = pd.read_excel(data_file)
+data_file = "New_HR_Dataset_Github_Ready.csv"  # Ensure the file path is correct
+df = pd.csv(data_file)
 
 # Streamlit app setup
 st.title("k-NN Regression: Predict PerformanceRating")
