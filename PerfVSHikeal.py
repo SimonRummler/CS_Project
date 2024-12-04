@@ -9,8 +9,8 @@ import numpy as np
 st.title("Performance Prediction Based on JobSatisfaction and PercentSalaryHike")
 
 # Load dataset function
-def load_dataset(file_path):
-    return pd.read_csv(file_path, sep=";")
+def load_dataset(Adjusted_HR_Dataset_Group4.5.csv):
+    return pd.read_csv(Adjusted_HR_Dataset_Group4.5.csv, sep=";")
 
 # Load data
 try:
