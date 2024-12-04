@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 
 # Load data
-data_file = "HR_Dataset_Group4.5.csv"  # Ensure the correct file name and location
+data_file = "New_HR_Dataset_Github_Ready.csv"  # Ensure the correct file name and location
 df = pd.read_csv(data_file, delimiter=';')
 
 # Streamlit app setup
