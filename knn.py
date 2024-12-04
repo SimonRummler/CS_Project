@@ -50,7 +50,8 @@ user_input = pd.DataFrame({'TotalWorkingYears': [user_working_years], 'JobLevel'
 predicted_income = model.predict(user_input)[0]
 st.write(f"Predicted Monthly Income: **{predicted_income:.2f}**")
 
-# Visualization: Scatterplot with farbcoded joblevel for better overview
+# Visualization: Scatterplot with farbcoded joblevel for better overview, the x-axis displays total working years and the y-axis shows predicted income, 
+# with point colors assigned via the viridis colormap for clear differentiation of job levels + color bar is added to show the job levels
 fig, ax = plt.subplots(figsize=(10, 6))
 scatter = ax.scatter(X_test['TotalWorkingYears'], y_pred, c=X_test['JobLevel'], cmap='viridis', s=50, alpha=0.8)
 ax.set_xlabel("Total Working Years")
