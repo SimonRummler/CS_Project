@@ -9,14 +9,14 @@ import numpy as np
 st.title("Performance Prediction Based on JobSatisfaction and PercentSalaryHike")
 
 # Load dataset function
-def load_dataset(Adjusted_HR_Dataset_Group4.5.csv):
-    return pd.read_csv(Adjusted_HR_Dataset_Group4.5.csv, sep=";")
+def load_dataset(file_name):
+    return pd.read_csv(file_name, sep=";")
 
 # Load data
 try:
-    data = load_dataset("Adjusted_HR_Dataset_Group4.5.csv")
+    data = load_dataset("Adjusted_HR_Dataset_Group4.5.csv")  # Datei im selben Verzeichnis
 except FileNotFoundError:
-    st.error("Dataset file not found. Please ensure the file is available.")
+    st.error("Dataset file not found. Please ensure the file is available in the current directory.")
     st.stop()
 
 # Display dataset structure
