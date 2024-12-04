@@ -9,6 +9,7 @@ import numpy as np
 st.title("Predict PerformanceRating Using JobSatisfaction and PercentSalaryHike")
 
 # Load dataset
+@st.cache
 def load_data(file_path):
     return pd.read_csv(file_path, sep=";")
 
@@ -66,5 +67,3 @@ if employee_id in data['EmployeeNumber'].values:
     st.write(f"Salary Increase: ${salary_increase:,.2f}")
 else:
     st.error("Employee number not found.")
-
-
