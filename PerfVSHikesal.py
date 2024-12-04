@@ -8,7 +8,7 @@ import streamlit as st
 
 # Load data
 data_file = "New_HR_Dataset_Github_Ready.csv"  # Ensure the file path is correct
-df = pd.csv(data_file)
+df = pd.read_csv(data_file, sep=";")
 
 # Streamlit app setup
 st.title("k-NN Regression: Predict PerformanceRating")
