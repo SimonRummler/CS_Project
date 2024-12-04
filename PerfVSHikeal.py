@@ -4,6 +4,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score, mean_squared_error
+import numpy as np
 
 # Title of the app
 st.title("Predict PerformanceRating Using JobSatisfaction and PercentSalaryHike (Multiple Regression)")
@@ -70,14 +71,14 @@ if employee_number in df['EmployeeNumber'].values:
 
     new_percent_hike = st.slider(
         "Adjust PercentSalaryHike:",
-        min_value=0, max_value=100,
+        min_value=0, max_value=30,
         value=int(current_percent_hike), step=1
     )
 
     # Predict PerformanceRating based on the adjusted inputs
     prediction = reg.predict([[new_job_satisfaction, new_percent_hike]])[0]
-    st.write(f"Predicted PerformanceRating for EmployeeNumber {employee_number}: {prediction:.2f}")
+    prediction = np.clip(np.round(prediction), 1, 5)  # Round to nearest integer and clip to range [1, 5]
+    st.write(f"Predicted PerformanceRating for EmployeeNumber {employee_number}: {int(prediction)}")
 else:
     st.error("The entered EmployeeNumber is not found in the dataset.")
-
 
