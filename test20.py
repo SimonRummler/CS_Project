@@ -9,7 +9,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 st.title("Multiple Regression: Job Satisfaction and Percent Salary Hike vs. Performance Rating")
 
 # Load data from the CSV file
-csv_file = "ADJ_HR_Data.csv"  # Local file in the same directory
+csv_file = "12342.csv"  # Local file in the same directory
 try:
     # Read the CSV file
     df = pd.read_csv(csv_file, sep=";")  # Semicolon as delimiter
