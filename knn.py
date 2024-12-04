@@ -1,71 +1,68 @@
 import pandas as pd
+import numpy as np
+import streamlit as st
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+from sklearn.linear_model import LinearRegression
+import matplotlib.pyplot as plt
 
-# Load the data from the CSV file
-file_path = "ADJ_HR_Data.csv"  # Replace with your actual file path
+# Titel der Streamlit-App
+st.title("Linear Regression: Total Working Years and Job Level vs. Predicted Monthly Income")
+
+# Daten aus der CSV-Datei laden
+csv_file = "HR_Dataset_Group4.5.csv"  # Lokale Datei im gleichen Verzeichnis
 try:
-    data = pd.read_csv(file_path, sep=";")  # Adjust delimiter if needed
+    # CSV-Datei einlesen
+    df = pd.read_csv(csv_file, sep=";")  # Semikolon als Trennzeichen
 except FileNotFoundError:
-    print("CSV file not found. Ensure the file is in the correct directory and the path is correct.")
-    exit()
+    st.error("CSV-Datei nicht gefunden. Stelle sicher, dass die Datei korrekt benannt und im richtigen Verzeichnis ist.")
+    st.stop()
 
-# Select and preprocess relevant columns
-df = data[['JobSatisfaction_scaled', 'PercentSalaryHike_scaled', 'MonthlyIncome', 'Attrition']].dropna()
+# Daten validieren
+try:
+    # Selektiere nur die relevanten Spalten für die Regression
+    df = df[['TotalWorkingYears', 'JobLevel', 'MonthlyIncome']].dropna()
+except KeyError as e:
+    st.error(f"Fehlende Spalten: {e}")
+    st.stop()
 
-# Convert Attrition to binary (Yes = 1, No = 0)
-df['Attrition'] = df['Attrition'].apply(lambda x: 1 if x == 'Yes' else 0)
+# Features und Ziel definieren
+X = df[['TotalWorkingYears', 'JobLevel']]
+y = df['MonthlyIncome']
 
-# Rescale Job Satisfaction to 1-5
-df['JobSatisfaction'] = df['JobSatisfaction_scaled'] * (5 - 1) + 1
-
-# Rescale Percent Salary Hike to 1-30%
-df['PercentSalaryHike'] = df['PercentSalaryHike_scaled'] * (30 - 1) + 1
-
-# Rescale Monthly Income to 2000-27000
-df['MonthlyIncome'] = df['MonthlyIncome'] * (27000 - 2000) + 2000
-
-# Define features and target
-X = df[['JobSatisfaction', 'PercentSalaryHike', 'MonthlyIncome']]
-y = df['Attrition']
-
-# Split the data into training and test sets
+# Datenaufteilung in Trainings- und Testdaten
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-# Train the k-NN classifier
-k = 5  # You can adjust this value as needed
-knn_model = KNeighborsClassifier(n_neighbors=k)
-knn_model.fit(X_train, y_train)
+# Regressionstraining
+model = LinearRegression()
+model.fit(X_train, y_train)
 
-# Make predictions
-y_pred = knn_model.predict(X_test)
+# Vorhersagen erstellen
+y_pred = model.predict(X_test)
 
-# Evaluate the model
-accuracy = accuracy_score(y_test, y_pred)
-conf_matrix = confusion_matrix(y_test, y_pred)
-report = classification_report(y_test, y_pred)
 
-# Print the evaluation results
-print(f"Accuracy: {accuracy:.2f}")
-print("Confusion Matrix:")
-print(conf_matrix)
-print("Classification Report:")
-print(report)
+# Benutzereingabe für Total Working Years und Job Level
+st.subheader("Predict Monthly Income")
+user_working_years = st.number_input("Enter Total Working Years:", min_value=0, max_value=40, step=1, value=10)
+user_job_level = st.number_input("Enter Job Level:", min_value=1, max_value=5, step=1, value=2)
 
-# Example user input for prediction
-print("\n--- User Prediction Example ---")
-job_satisfaction = float(input("Enter Job Satisfaction (1-5): "))
-percent_salary_hike = float(input("Enter Percent Salary Hike (1-30%): "))
-monthly_income = float(input("Enter Monthly Income (2000-27000): "))
+# Vorhersage des Monthly Income für Benutzereingabe
+user_input = pd.DataFrame({'TotalWorkingYears': [user_working_years], 'JobLevel': [user_job_level]})
+predicted_income = model.predict(user_input)[0]
+st.write(f"Predicted Monthly Income: **{predicted_income:.2f}**")
 
-# Predict based on user input
-user_input = pd.DataFrame({
-    'JobSatisfaction': [job_satisfaction],
-    'PercentSalaryHike': [percent_salary_hike],
-    'MonthlyIncome': [monthly_income]
-})
-predicted_attrition = knn_model.predict(user_input)[0]
-print(f"Predicted Attrition: {'Yes' if predicted_attrition == 1 else 'No'}")
+# Visualisierung: Scatterplot mit farbkodiertem JobLevel und Benutzereingabe
+fig, ax = plt.subplots(figsize=(10, 6))
+scatter = ax.scatter(X_test['TotalWorkingYears'], y_pred, c=X_test['JobLevel'], cmap='viridis', s=50, alpha=0.8)
+ax.set_xlabel("Total Working Years")
+ax.set_ylabel("Predicted Monthly Income")
+ax.set_title("Predicted Monthly Income vs. Total Working Years (Color: Job Level)")
+cbar = plt.colorbar(scatter, ax=ax)
+cbar.set_label("Job Level")
+
+# Benutzereingabe auf dem Graphen darstellen
+ax.scatter(user_working_years, predicted_income, color='red', s=100, label='Your Input', zorder=5)
+ax.legend()
+
+# Plot anzeigen
+st.pyplot(fig)
 
