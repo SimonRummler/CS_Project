@@ -6,7 +6,16 @@ from sklearn.metrics import mean_squared_error, r2_score
 import matplotlib.pyplot as plt
 import streamlit as st
 
-# Load data
+# Path 1 (this should be all new when using the API)
+data_file = "New_HR_Dataset_Github_Ready.csv"
+df = pd.read_csv(data_file, delimiter=',')  # Adjust the delimiter if needed
+
+# 1.2 Strip whitespace from column names
+df.columns = df.columns.str.strip()
+
+# 1.3 Display column names for debugging
+st.write("Available Columns:", df.columns.tolist())
+# 1.4 Load data
 data_file = "New_HR_Dataset_Github_Ready.csv"  # Ensure the correct file name and location
 df = pd.read_csv(data_file, delimiter=';')
 
