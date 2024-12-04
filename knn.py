@@ -6,7 +6,7 @@ from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 
 #Header
-st.title("Linear Regression: Total Working Years and Job Level vs. Predicted Monthly Income")
+st.title("Multiple Regression: Total Working Years and Job Level vs. Predicted Monthly Income")
 
 #Path and Error if access is not possible
 csv_file = "HR_Dataset_Group4.5.csv"  # Lokale Datei im gleichen Verzeichnis
