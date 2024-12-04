@@ -8,7 +8,7 @@ import streamlit as st
 
 # Path 1 (this should be all new when using the API)
 data_file = "New_HR_Dataset_Github_Ready.csv"
-df = pd.read_csv(data_file, delimiter=',')  # Adjust the delimiter if needed
+df = pd.read_csv(data_file, delimiter=';')  # Adjust the delimiter if needed
 
 # 1.2 Strip whitespace from column names
 df.columns = df.columns.str.strip()
