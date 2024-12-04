@@ -7,14 +7,23 @@ import matplotlib.pyplot as plt
 import streamlit as st
 
 # Load data
-data_file = "New_HR_Dataset_Github_Ready.csv"  # Ensure the file path is correct
-df = pd.read_csv(data_file, sep=";")
+data_file = "HR_Dataset_Group4.5.csv"  # Ensure the correct file name and location
+df = pd.read_csv(data_file, delimiter=';')
 
 # Streamlit app setup
 st.title("k-NN Regression: Predict PerformanceRating")
 
+# Validate the dataset
+st.write("Dataset Overview:")
+st.write(df.head())
+
+# Check for missing values in key columns
+if df[['PercentSalaryHike', 'PerformanceRating', 'UID']].isnull().any().any():
+    st.error("Dataset contains missing values. Please clean the data and try again.")
+    st.stop()
+
 # Select relevant features and target
-X = df[['PercentSalaryHike']]  # Input features
+X = df[['PercentSalaryHike']]  # Input feature
 y = df['PerformanceRating']    # Target variable
 
 # Scale the data
@@ -43,17 +52,17 @@ st.write(f"R² Score: {r2:.2f}")
 
 # User input for Employee UID and PercentSalaryHike
 st.subheader("Predict PerformanceRating for an Employee")
-employee_uid = st.selectbox("Select Employee UID:", df.index)
-selected_employee = df.loc[employee_uid]
+employee_uid = st.selectbox("Select Employee UID:", df['UID'])
+selected_employee = df[df['UID'] == employee_uid]
 
-st.write("Employee Details:")
+st.write("Selected Employee Details:")
 st.write(selected_employee)
 
 percent_hike = st.number_input(
     "Enter PercentSalaryHike:",
     min_value=0,
     max_value=100,
-    value=int(selected_employee['PercentSalaryHike'])
+    value=int(selected_employee['PercentSalaryHike'].values[0])
 )
 
 # Scale the input PercentSalaryHike
@@ -75,5 +84,7 @@ ax.set_ylabel('PerformanceRating')
 ax.legend()
 
 # Display the plot
+st.pyplot(fig)
+
 st.pyplot(fig)
 
