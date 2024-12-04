@@ -3,11 +3,9 @@ import streamlit as st
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import classification_report, ConfusionMatrixDisplay
-import matplotlib.pyplot as plt
 
 # Titel der App
-st.title("KNN Classifier: PercentSalaryHike vs. PerformanceRating")
+st.title("KNN Classifier: Predict PerformanceRating with Adjustable PercentSalaryHike")
 
 # CSV-Datei laden
 csv_file = "HR_Dataset_Group4.5.csv"  # Lokale Datei im selben Verzeichnis
@@ -19,17 +17,17 @@ except FileNotFoundError:
 
 # Daten validieren
 try:
-    df = df[['PercentSalaryHike', 'PerformanceRating']].dropna()
+    df = df[['EmployeeNumber', 'PercentSalaryHike', 'PerformanceRating']].dropna()
 except KeyError:
-    st.error("Die Spalten 'PercentSalaryHike' und 'PerformanceRating' fehlen in der Datei.")
+    st.error("Die Spalten 'EmployeeNumber', 'PercentSalaryHike' und 'PerformanceRating' fehlen in der Datei.")
     st.stop()
 
 # Daten skalieren
 scaler = MinMaxScaler()
-df['PercentSalaryHike'] = scaler.fit_transform(df[['PercentSalaryHike']])
+df['PercentSalaryHike_scaled'] = scaler.fit_transform(df[['PercentSalaryHike']])
 
 # Features und Zielvariable definieren
-X = df[['PercentSalaryHike']]
+X = df[['PercentSalaryHike_scaled']]
 y = df['PerformanceRating']
 
 # Split in Trainings- und Testdaten
@@ -40,21 +38,24 @@ k = 5  # Festgelegter Wert
 knn = KNeighborsClassifier(n_neighbors=k)
 knn.fit(X_train, y_train)
 
-# Vorhersagen und Bewertung
-y_pred = knn.predict(X_test)
-st.write("### Modellbewertung")
-st.text(classification_report(y_test, y_pred))
+# Eingabefeld für EmployeeNumber
+st.write("### Vorhersage des PerformanceRatings basierend auf EmployeeNumber")
+employee_number = st.number_input("Gib die EmployeeNumber ein:", min_value=int(df['EmployeeNumber'].min()), max_value=int(df['EmployeeNumber'].max()), step=1)
 
-# Confusion Matrix anzeigen
-st.write("### Confusion Matrix")
-fig, ax = plt.subplots(figsize=(6, 4))
-ConfusionMatrixDisplay.from_predictions(y_test, y_pred, ax=ax)
-st.pyplot(fig)
+if employee_number in df['EmployeeNumber'].values:
+    # Zeige aktuelle PercentSalaryHike
+    current_percent_hike = df.loc[df['EmployeeNumber'] == employee_number, 'PercentSalaryHike'].values[0]
+    st.write(f"Aktueller PercentSalaryHike für EmployeeNumber {employee_number}: {current_percent_hike}%")
 
-# Benutzerdefinierte Vorhersagen
-st.write("### Vorhersage für benutzerdefinierte Eingabe")
-user_input = st.number_input("Gib PercentSalaryHike ein (normalisiert zwischen 0 und 1):", min_value=0.0, max_value=1.0, step=0.01)
-if user_input:
-    prediction = knn.predict([[user_input]])
-    st.write(f"Vorhergesagte PerformanceRating: {prediction[0]}")
+    # Eingabefeld für neuen PercentSalaryHike
+    new_percent_hike = st.slider("Ändere den PercentSalaryHike-Wert:", min_value=0, max_value=100, value=int(current_percent_hike), step=1)
+
+    # Skaliere den neuen Wert
+    new_percent_hike_scaled = scaler.transform([[new_percent_hike]])[0][0]
+
+    # Vorhersage basierend auf dem neuen PercentSalaryHike
+    prediction = knn.predict([[new_percent_hike_scaled]])[0]
+    st.write(f"Vorhergesagtes PerformanceRating für EmployeeNumber {employee_number} mit PercentSalaryHike {new_percent_hike}%: {prediction}")
+else:
+    st.error("Die eingegebene EmployeeNumber ist nicht in den Daten enthalten.")
 
