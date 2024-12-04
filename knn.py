@@ -5,7 +5,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 
 # Load the data from the CSV file
-file_path = "ADJ_HR_Data_Performance_Rating_JobSatisfaction.csv"  # Replace with your actual file path
+file_path = "ADJ_HR_Data.csv"  # Replace with your actual file path
 try:
     data = pd.read_csv(file_path, sep=";")  # Adjust delimiter if needed
 except FileNotFoundError:
