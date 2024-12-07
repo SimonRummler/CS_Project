@@ -9,3 +9,4 @@ google-auth-httplib2 # Für HTTP-Transport mit Google APIs
 google-api-python-client # Für die Google Sheets API
 seaborn
 statsmodels
+fpdf
