@@ -25,7 +25,7 @@ def main():
         st.stop()
 
     # Auswahlbox für Mitarbeiter mit eindeutigem Key
-    uid = st.selectbox("Mitarbeiter auswählen (UID)", data["UID"].unique(), key="select_uid_widget")
+    uid = st.selectbox("Choose Employee (UID)", data["UID"].unique(), key="select_uid_widget")
 
     # Daten des ausgewählten Mitarbeiters laden
     employee_data = data[data["UID"] == uid]
