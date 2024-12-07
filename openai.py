@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from fpdf import FPDF
 import openai
+import io
 
 # OpenAI API-Key aus Streamlit Secrets
 try:
@@ -14,31 +15,26 @@ except KeyError:
 try:
     data = pd.read_csv("12342.csv", delimiter=";")
 except FileNotFoundError:
-    st.error("The CSV file '12342.csv' was not found. Please ensure it is in the same directory.")
+    st.error("Die CSV-Datei '12342.csv' wurde nicht gefunden. Bitte stelle sicher, dass sie im selben Verzeichnis liegt.")
     st.stop()
 
-# Streamlit UI
-st.title("Employee Report Generator")
-
-# Verfügbare Spalten überprüfen und anzeigen
-if st.checkbox("Show available columns in the CSV", key="show_columns_checkbox"):
-    st.write(data.columns.tolist())
-
-# Mitarbeiter auswählen
+# Prüfung auf UID-Spalte
 if "UID" not in data.columns:
-    st.error("The column 'UID' is missing from the dataset. Please check the CSV file.")
+    st.error("Die Spalte 'UID' fehlt in der CSV-Datei. Bitte überprüfe die Daten.")
     st.stop()
 
-uid = st.selectbox("Select Employee UID", data["UID"], key="select_uid")
+# Auswahlbox für Mitarbeiter
+uid = st.selectbox("Mitarbeiter auswählen (UID)", data["UID"].unique(), key="select_uid")
 
-# Daten des ausgewählten Mitarbeiters
-try:
-    employee_data = data[data["UID"] == uid].iloc[0]
-except IndexError:
-    st.error("The selected UID does not exist in the dataset.")
+# Daten des ausgewählten Mitarbeiters laden
+employee_data = data[data["UID"] == uid]
+if employee_data.empty:
+    st.error("Die ausgewählte UID ist nicht in der Datentabelle vorhanden.")
     st.stop()
 
-# Berichtsgenerierungsfunktion
+employee_data = employee_data.iloc[0]  # Ersten Eintrag nehmen
+
+# Funktion zur Berichtserzeugung
 def generate_report(employee):
     try:
         prompt = (
@@ -60,39 +56,35 @@ def generate_report(employee):
         )
         return response.choices[0].text.strip()
     except Exception as e:
-        st.error(f"An error occurred while generating the report: {e}")
+        st.error(f"Beim Erstellen des Berichts ist ein Fehler aufgetreten: {e}")
         return None
 
+# PDF-Erstellungsfunktion
+def create_pdf(report, employee):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, txt=f"Employee Report (UID: {employee['UID']})", ln=True, align="C")
+    pdf.ln(10)
+    pdf.set_font("Arial", size=12)
+    pdf.multi_cell(0, 10, txt=report)
+    return pdf
+
 # Bericht generieren und anzeigen
-if st.button("Generate Report", key="generate_report_button"):
+if st.button("Generate Report"):
     report_text = generate_report(employee_data)
     if report_text:
         st.subheader("Employee Report:")
         st.write(report_text)
 
-        # PDF-Erstellungsfunktion
-        def create_pdf(report, employee):
-            pdf = FPDF()
-            pdf.add_page()
-            pdf.set_font("Arial", size=12)
-            pdf.cell(200, 10, txt=f"Employee Report for UID {employee['UID']}", ln=True, align="C")
-            pdf.ln(10)
-            pdf.set_font("Arial", size=10)
-            pdf.multi_cell(0, 10, txt=report)
-            return pdf
-
-        # PDF generieren und Download ermöglichen
+        # PDF generieren und zum Download anbieten
         pdf = create_pdf(report_text, employee_data)
-        pdf_output = f"UID_{employee_data['UID']}_Report.pdf"
-        pdf.output(pdf_output)
-
-        with open(pdf_output, "rb") as file:
-            st.download_button(
-                label="📄 Download PDF",
-                data=file,
-                file_name=pdf_output,
-                mime="application/pdf",
-                key="download_pdf_button"
-            )
+        pdf_bytes = pdf.output(dest='S').encode('latin-1')  # PDF als Bytes im Speicher
+        st.download_button(
+            label="📄 Download PDF",
+            data=pdf_bytes,
+            file_name=f"UID_{employee_data['UID']}_Report.pdf",
+            mime="application/pdf"
+        )
 
 
