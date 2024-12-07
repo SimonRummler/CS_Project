@@ -1,16 +1,20 @@
 import streamlit as st
 import pandas as pd
 from fpdf import FPDF
-import openai
+import requests
 import io
 
 def main():
-    # OpenAI API-Key aus Streamlit Secrets
+    # Hugging Face API-Key aus Streamlit Secrets laden
     try:
-        openai.api_key = st.secrets["openai"]["api_key"]
+        hf_token = st.secrets["hf"]["api_token"]
     except KeyError:
-        st.error("OpenAI API Key is missing. Please check your Streamlit secrets.")
+        st.error("Hugging Face API Token is missing. Please add it to your Streamlit secrets.")
         st.stop()
+
+    # Hugging Face Inference API für Falcon 7B Instruct (Beispiel) nutzen
+    API_URL = "https://api-inference.huggingface.co/models/tiiuae/falcon-7b-instruct"
+    headers = {"Authorization": f"Bearer {hf_token}"}
 
     # CSV-Datei laden
     try:
@@ -24,10 +28,10 @@ def main():
         st.error("Die Spalte 'UID' fehlt in der CSV-Datei. Bitte überprüfe die Daten.")
         st.stop()
 
-    # Auswahlbox für Mitarbeiter mit eindeutigem Key
+    # Mitarbeiter per Dropdown auswählen
     uid = st.selectbox("Mitarbeiter auswählen (UID)", data["UID"].unique(), key="select_uid_widget")
 
-    # Daten des ausgewählten Mitarbeiters laden
+    # Daten des ausgewählten Mitarbeiters holen
     employee_data = data[data["UID"] == uid]
     if employee_data.empty:
         st.error("Die ausgewählte UID ist nicht in der Datentabelle vorhanden.")
@@ -35,11 +39,11 @@ def main():
 
     employee_data = employee_data.iloc[0]
 
-    # Funktion zur Berichtserzeugung (mit ChatCompletion)
+    # Funktion zur Berichtserzeugung über Hugging Face Inference API
     def generate_report(employee):
         try:
             prompt = (
-                f"Write a professional employee report based on the following details:\n\n"
+                "Write a professional employee report based on the following details:\n\n"
                 f"Age: {employee['Age']}\n"
                 f"Department: {employee['Department']}\n"
                 f"Business Travel: {employee['BusinessTravel']}\n"
@@ -50,14 +54,15 @@ def main():
                 "Please write the report in a formal tone suitable for business use."
             )
 
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=300,
-                temperature=0.7
-            )
-            return response.choices[0].message["content"].strip()
+            payload = {"inputs": prompt}
+            response = requests.post(API_URL, headers=headers, json=payload)
+            result = response.json()
 
+            # Prüfen, ob "generated_text" im Ergebnis enthalten ist
+            if isinstance(result, list) and len(result) > 0 and "generated_text" in result[0]:
+                return result[0]["generated_text"].strip()
+            else:
+                return "Keine gültige Antwort erhalten."
         except Exception as e:
             st.error(f"Beim Erstellen des Berichts ist ein Fehler aufgetreten: {e}")
             return None
@@ -73,16 +78,16 @@ def main():
         pdf.multi_cell(0, 10, txt=report)
         return pdf
 
-    # Bericht generieren und anzeigen (mit eindeutigem key für den Button)
+    # Button zum Erstellen des Berichts
     if st.button("Generate Report", key="generate_report_button"):
-        report_text = generate_report(employee_data)
+        with st.spinner("Bericht wird generiert..."):
+            report_text = generate_report(employee_data)
         if report_text:
             st.subheader("Employee Report:")
             st.write(report_text)
 
             pdf = create_pdf(report_text, employee_data)
-            pdf_bytes = pdf.output(dest='S').encode('latin-1') 
-            # eindeutiger Key für den Download-Button
+            pdf_bytes = pdf.output(dest='S').encode('latin-1')
             st.download_button(
                 label="📄 Download PDF",
                 data=pdf_bytes,
