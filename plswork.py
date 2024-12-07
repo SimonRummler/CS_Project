@@ -5,64 +5,79 @@ import openai
 import io
 
 def main():
-    # OpenAI API-Key aus Streamlit Secrets
+    # OpenAI API-Key from Streamlit Secrets
     try:
         openai.api_key = st.secrets["openai"]["api_key"]
     except KeyError:
         st.error("OpenAI API Key is missing. Please check your Streamlit secrets.")
         st.stop()
 
-    # CSV-Datei laden
+    # Load CSV file
     try:
         data = pd.read_csv("12342.csv", delimiter=";")
     except FileNotFoundError:
-        st.error("Die CSV-Datei '12342.csv' wurde nicht gefunden. Bitte stelle sicher, dass sie im selben Verzeichnis liegt.")
+        st.error("The CSV file '12342.csv' was not found. Please ensure it is in the same directory.")
         st.stop()
 
-    # Prüfung auf UID-Spalte
+    # Check for UID column
     if "UID" not in data.columns:
-        st.error("Die Spalte 'UID' fehlt in der CSV-Datei. Bitte überprüfe die Daten.")
+        st.error("The 'UID' column is missing from the CSV file. Please verify your data.")
         st.stop()
 
-    # Auswahlbox für Mitarbeiter mit eindeutigem Key
+    # Employee selection
     uid = st.selectbox("Choose Employee (UID)", data["UID"].unique(), key="select_uid_widget")
 
-    # Daten des ausgewählten Mitarbeiters laden
+    # Load selected employee data
     employee_data = data[data["UID"] == uid]
     if employee_data.empty:
-        st.error("Die ausgewählte UID ist nicht in der Datentabelle vorhanden.")
+        st.error("The selected UID is not present in the data table.")
         st.stop()
 
     employee_data = employee_data.iloc[0]
 
-    # Funktion zur Berichtserzeugung (mit ChatCompletion)
+    # Generate report using ChatCompletion
     def generate_report(employee):
         try:
+            # Build the prompt using the provided data fields
             prompt = (
-                f"Write a professional employee report based on the following details:\n\n"
+                "Create a short, formal, and professional employee report in English using only the provided data. "
+                "The employee does not have a name, so please refer to them by their UID. "
+                "Do not add any information not present in the data. Present the information as a cohesive paragraph "
+                "without additional speculation.\n\n"
+                f"Data:\n"
+                f"UID: {employee['UID']}\n"
                 f"Age: {employee['Age']}\n"
                 f"Department: {employee['Department']}\n"
-                f"Business Travel: {employee['BusinessTravel']}\n"
-                f"Years at Company: {employee['YearsAtCompany']}\n"
+                f"Job Role: {employee['JobRole']}\n"
+                f"Gender: {employee['Gender']}\n"
                 f"Education Field: {employee['EducationField']}\n"
-                f"Work-Life Balance: {employee['WorkLifeBalance']}\n"
-                f"Total Working Years: {employee['TotalWorkingYears']}\n\n"
-                "Please write the report in a formal tone suitable for business use."
+                f"Years at Company: {employee['YearsAtCompany']}\n"
+                f"Total Working Years: {employee['TotalWorkingYears']}\n"
+                f"Monthly Income: {employee['MonthlyIncome']}\n"
+                f"Business Travel: {employee['BusinessTravel']}\n"
+                f"Overtime: {employee['OverTime']}\n"
+                f"Job Satisfaction (1–4): {employee['JobSatisfaction']}\n"
+                f"Work-Life Balance (1–4): {employee['WorkLifeBalance']}\n"
+                f"Relationship Satisfaction (1–4): {employee['RelationshipSatisfaction']}\n"
+                f"Performance Rating: {employee['PerformanceRating']}\n"
+                f"Training Times Last Year: {employee['TrainingTimesLastYear']}\n\n"
+                "Please create a single paragraph that uses only these details, maintains a professional and formal tone, "
+                "and does not introduce any additional information beyond what is provided."
             )
 
             response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=300,
-                temperature=0.7
+                max_tokens=500,
+                temperature=0.0
             )
             return response.choices[0].message["content"].strip()
 
         except Exception as e:
-            st.error(f"Beim Erstellen des Berichts ist ein Fehler aufgetreten: {e}")
+            st.error(f"An error occurred while generating the report: {e}")
             return None
 
-    # PDF-Erstellungsfunktion
+    # PDF creation function
     def create_pdf(report, employee):
         pdf = FPDF()
         pdf.add_page()
@@ -73,7 +88,7 @@ def main():
         pdf.multi_cell(0, 10, txt=report)
         return pdf
 
-    # Bericht generieren und anzeigen (mit eindeutigem key für den Button)
+    # Generate and display report
     if st.button("Generate Report", key="generate_report_button"):
         report_text = generate_report(employee_data)
         if report_text:
@@ -82,7 +97,6 @@ def main():
 
             pdf = create_pdf(report_text, employee_data)
             pdf_bytes = pdf.output(dest='S').encode('latin-1') 
-            # eindeutiger Key für den Download-Button
             st.download_button(
                 label="📄 Download PDF",
                 data=pdf_bytes,
@@ -93,4 +107,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
