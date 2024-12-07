@@ -4,7 +4,7 @@ from fpdf import FPDF
 import openai
 
 # OpenAI API-Key aus Streamlit Secrets
-openai.api_key = st.secrets["api_key"]
+openai.api_key = st.secrets["openai"]["api_key"]
 
 # CSV-Datei laden
 data = pd.read_csv("12342.csv")
@@ -68,3 +68,4 @@ if st.button("Generate Report"):
             file_name=pdf_output,
             mime="application/pdf"
         )
+
