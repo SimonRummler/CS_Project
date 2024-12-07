@@ -23,8 +23,8 @@ if "UID" not in data.columns:
     st.error("Die Spalte 'UID' fehlt in der CSV-Datei. Bitte überprüfe die Daten.")
     st.stop()
 
-# Auswahlbox für Mitarbeiter
-uid = st.selectbox("Mitarbeiter auswählen (UID)", data["UID"].unique(), key="select_uid")
+# Auswahlbox für Mitarbeiter (ohne key)
+uid = st.selectbox("Mitarbeiter auswählen (UID)", data["UID"].unique())
 
 # Daten des ausgewählten Mitarbeiters laden
 employee_data = data[data["UID"] == uid]
@@ -32,7 +32,7 @@ if employee_data.empty:
     st.error("Die ausgewählte UID ist nicht in der Datentabelle vorhanden.")
     st.stop()
 
-employee_data = employee_data.iloc[0]  # Ersten Eintrag nehmen
+employee_data = employee_data.iloc[0]
 
 # Funktion zur Berichtserzeugung
 def generate_report(employee):
