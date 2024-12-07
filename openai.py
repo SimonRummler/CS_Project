@@ -7,10 +7,15 @@ import openai
 openai.api_key = st.secrets["openai"]["api_key"]
 
 # CSV-Datei laden
-data = pd.read_csv("12342.csv")
+data = pd.read_csv("12342.csv", sep=";")  # Datentrenner ist hier ein Semikolon
 
-# Streamlit UI
-st.title("Employee Report Generator")
+# Debugging: Verfügbare Spalten anzeigen
+st.write("Available columns in the CSV:", data.columns.tolist())
+
+# Sicherstellen, dass die Spalte 'UID' existiert
+if "UID" not in data.columns:
+    st.error("The column 'UID' does not exist in the CSV file. Please check the file.")
+    st.stop()
 
 # Mitarbeiter auswählen
 uid = st.selectbox("Select Employee UID", data["UID"])
