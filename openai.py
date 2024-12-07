@@ -21,7 +21,7 @@ except FileNotFoundError:
 st.title("Employee Report Generator")
 
 # Verfügbare Spalten überprüfen und anzeigen
-if st.checkbox("Show available columns in the CSV", key="show_columns"):
+if st.checkbox("Show available columns in the CSV", key="show_columns_checkbox"):
     st.write(data.columns.tolist())
 
 # Mitarbeiter auswählen
@@ -29,7 +29,7 @@ if "UID" not in data.columns:
     st.error("The column 'UID' is missing from the dataset. Please check the CSV file.")
     st.stop()
 
-uid = st.selectbox("Select Employee UID", data["UID"], key="unique_uid_selectbox")
+uid = st.selectbox("Select Employee UID", data["UID"], key="select_uid")
 
 # Daten des ausgewählten Mitarbeiters
 try:
@@ -91,7 +91,8 @@ if st.button("Generate Report", key="generate_report_button"):
                 label="📄 Download PDF",
                 data=file,
                 file_name=pdf_output,
-                mime="application/pdf"
+                mime="application/pdf",
+                key="download_pdf_button"
             )
 
 
