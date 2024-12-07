@@ -35,7 +35,7 @@ def main():
 
     employee_data = employee_data.iloc[0]
 
-    # Funktion zur Berichtserzeugung
+    # Funktion zur Berichtserzeugung (mit ChatCompletion)
     def generate_report(employee):
         try:
             prompt = (
@@ -49,13 +49,15 @@ def main():
                 f"Total Working Years: {employee['TotalWorkingYears']}\n\n"
                 "Please write the report in a formal tone suitable for business use."
             )
-            response = openai.Completion.create(
-                engine="text-davinci-003",
-                prompt=prompt,
+
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt}],
                 max_tokens=300,
                 temperature=0.7
             )
-            return response.choices[0].text.strip()
+            return response.choices[0].message["content"].strip()
+
         except Exception as e:
             st.error(f"Beim Erstellen des Berichts ist ein Fehler aufgetreten: {e}")
             return None
@@ -91,5 +93,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
