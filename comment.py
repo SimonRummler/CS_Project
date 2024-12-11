@@ -366,7 +366,7 @@ elif st.session_state.page == "Employee Report":
         st.stop()
 
     # Employee selection
-    employee_number = st.selectbox("Choose Employee (EmployeeNumber)", df["EmployeeNumber"].unique())
+    employee_number = st.selectbox("Choose Employee (EmployeeNumber)", df["EmployeeNumber"])
 
     # Filter data for selected employee
     employee_data = df[df["EmployeeNumber"] == employee_number]
