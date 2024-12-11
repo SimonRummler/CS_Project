@@ -376,7 +376,7 @@ elif st.session_state.page == "Employee Report":
             st.session_state.page = "Home"
         st.stop()
 
-    employee_data = employee_data.iloc[0]
+    employee_data = employee_data[0]
 
     def generate_report(employee):
         # Build the prompt
