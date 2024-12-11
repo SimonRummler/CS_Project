@@ -95,7 +95,10 @@ elif st.session_state.page == "Employee Report":
             return None
 
     def create_pdf(report, employee):
+        # Creating a new PDF document using the FPDF library assigning
+        # This line creates a new instance of the FPDF class from the fpdf library, which represents a blank PDF document. The instance is assigned to the variable 'pdf'
         pdf = FPDF()
+        #Adding one page to write our report
         pdf.add_page()
         pdf.set_font("Arial", "B", 16)
         pdf.cell(0, 10, txt=f"Employee Report (EmployeeNumber: {employee['EmployeeNumber']})", ln=True, align="C")
