@@ -1,8 +1,9 @@
-# Employee Report Page
+# Employee Report Page with title
 elif st.session_state.page == "Employee Report":
     st.title("Employee Report")
 
-    # Tries to Load the OpenAI API Key from the secrets in Streamlit
+    # Tries to Load the OpenAI API Key from the secrets in Streamlit 
+    # As source on how to implement open AI API https://www.youtube.com/watch?v=YVFWBJ1WVF8
     try:
         openai.api_key = st.secrets["openai"]["api_key"]
         
@@ -23,7 +24,7 @@ elif st.session_state.page == "Employee Report":
         st.stop()
 
     # Creating a dropdown menu for the user to select an employee based on their EmployeeNumber.
-    # The options in the dropdown are populated from the "EmployeeNumber" column of the DataFrame.
+    # The options in the dropdown are taken from the "EmployeeNumber" column of the DataFrame.
     # The selected value is stored in the variable "employee_number" for further processing.
     employee_number = st.selectbox("Choose Employee (EmployeeNumber)", df["EmployeeNumber"])
 
@@ -38,7 +39,7 @@ elif st.session_state.page == "Employee Report":
             st.session_state.page = "Home"
         st.stop()
 
-    # Extracting the selected entry from the filtered employee_data list
+    # Extracting the selected entry from the filtered employee_data list, since there will be only one entry per number there is only one column
     employee_data = employee_data[0]
     
     def generate_report(employee):
@@ -70,12 +71,11 @@ elif st.session_state.page == "Employee Report":
             "Please create a single paragraph that uses only these details, maintains a professional and formal tone, " 
             "and does not introduce any additional information beyond what is provided."
         )
-        # Asking the OpenAi API/ChatGPT 
-        # While using the version of chat gpt 3.5
-        # Adding necessary attributes to the message. 
-        # Defining a role is mandatory for the OpenAI API. In this case, the role is set to "user" because the prompt represents input from the user
-        # Limiting the usage of the tokens, which are used for each report. The tokens are purchased at the OpenAI API website
-        # Defining a temperature of 0.0, which means that the model works very deterministically and always gives the most probable answer without adding randomness
+        # Asking the OpenAi API/ChatGPT, while using the version of chat gpt 3.5
+        # Adding necessary attributes to the message: 
+            # Defining a role is mandatory for the OpenAI API. In this case, the role is set to "user" because the prompt represents input from the user
+            # Limiting the usage of the tokens, which are used for each report. The tokens are purchased at the OpenAI API website
+            # Defining a temperature of 0.0, which means that the model works very deterministically and always gives the most probable answer without adding randomness
         try:
             response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
@@ -95,26 +95,57 @@ elif st.session_state.page == "Employee Report":
             return None
 
     def create_pdf(report, employee):
-        # Creating a new PDF document using the FPDF library assigning
+        # Creating a new PDF document using the FPDF library assigning, source https://www.youtube.com/watch?v=q70xzDG6nls&list=PLjNQtX45f0dR9K2sMJ5ad9wVjqslNBIC0
         # This line creates a new instance of the FPDF class from the fpdf library, which represents a blank PDF document. The instance is assigned to the variable 'pdf'
         pdf = FPDF()
         #Adding one page to write our report
         pdf.add_page()
-        pdf.set_font("Arial", "B", 16)
+        # Set the font for the title of the report
+        # Arial is used as the font, "B" indicates bold, and 16 is the font size
+        pdf.set_font("Arial", "B", 15)
+        # Add the title of the report to the PDF
+        # Attributes:
+            # width: 0 (spans the whole page)
+            # height: 10 (cell height)
+            # txt: The title of text, which includes the EmployeeNumber
+            # ln: starts a new line after the Title
+            # align: C means that it centers the text horizontally
         pdf.cell(0, 10, txt=f"Employee Report (EmployeeNumber: {employee['EmployeeNumber']})", ln=True, align="C")
+        # Add vertical spacing after the title, and the new line is implemented 10 units after the title
         pdf.ln(10)
-        pdf.set_font("Arial", size=12)
+        # The report Arial is used with a normal style not bold or italic and the font size is set to 12, since it is not a title
+        pdf.set_font("Arial", size=11)
+        # Add the report text to the PDF as multi-line content
+        # Parameters:
+            # width: 0 (spans the entire width of the page)
+            # height: 10 (line height for each row)
+            # txt: Uses the report text from the OpenAI API/ Chat GPT
+            # multi_cell automatically wraps the text to fit within the page width
         pdf.multi_cell(0, 10, txt=report)
+        # It returns and displays the pdf, which has the ability to be displayed and downloaded
         return pdf
-
+        
+    # Check if the "Generate Report" button is clicked by the user in the Streamlit app.
     if st.button("Generate Report"):
+        # Call the generate_report function, passing the selected employee's data (employee_data) as input. The function returns the report generated from the OpenAi APi/ Chat GPT.
         report_text = generate_report(employee_data)
+        # Check if the generated report is not empty or None, which ensures that the report is displayed only if it was generated
         if report_text:
+            # Adding a subheader in the Streamlit app "Employee Report:" 
             st.subheader("Employee Report:")
+            # Display the generated employee report from OpenAI API/ ChatGPT in the Streamlit app
             st.write(report_text)
 
+            # Call the create_pdf function to generate a PDF report using the generated report and the employee data. The resulting PDF object is assigned to the variable pdf
             pdf = create_pdf(report_text, employee_data)
+            # Convert the PDF object into a byte stream, while using the output method of the FPDF library
+            # This is necessary in streamlit to create a better ability to download it.
+            # The parameter dest=S says that the output is returned as a string 
+            # This string is  encoded in latin-1 to make it compatible with PDF standards, so it is downloadable. In this case latin -1 is usefull, because no graphics or emojies are shown in the text document
             pdf_bytes = pdf.output(dest='S').encode('latin-1')
+            # Creating a download button in streamlit which shows up with the emoji and text "Download PDF" 
+            # it uses the data from pdf_bytes
+            # Naming the File as EmployeeNumber_Report.pdf
             st.download_button(
                 label="📄 Download PDF",
                 data=pdf_bytes,
